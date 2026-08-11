@@ -1,0 +1,25 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Transparent Background Container -->
+  <rect width="120" height="120" fill="none" />
+  
+  <!-- Light Beige Circle -->
+  <circle cx="60" cy="60" r="50" fill="#F6EFE3" />
+  
+  <!-- Calendar Body -->
+  <rect x="38" y="46" width="34" height="28" rx="3" fill="none" stroke="#AD8B52" stroke-width="3.5" />
+  
+  <!-- Calendar Header Line -->
+  <line x1="38" y1="54" x2="72" y2="54" stroke="#AD8B52" stroke-width="3.5" />
+  
+  <!-- Left Binder -->
+  <line x1="45" y1="41" x2="45" y2="49" stroke="#AD8B52" stroke-width="3.5" stroke-linecap="round" />
+  
+  <!-- Right Binder -->
+  <line x1="56" y1="41" x2="56" y2="49" stroke="#AD8B52" stroke-width="3.5" stroke-linecap="round" />
+  
+  <!-- Solid Gold Check Circle -->
+  <circle cx="76" cy="72" r="14" fill="#AD8B52" />
+  
+  <!-- White Checkmark Inside -->
+  <path d="M 69 72 L 74 77 L 83 66" fill="none" stroke="#F6EFE3" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

@@ -1,0 +1,19 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Transparent Background Container -->
+  <rect width="120" height="120" fill="none" />
+  
+  <!-- Light Beige Circle -->
+  <circle cx="60" cy="60" r="50" fill="#F6EFE3" />
+  
+  <!-- User Head -->
+  <circle cx="50" cy="48" r="9" fill="none" stroke="#AD8B52" stroke-width="3.5" />
+  
+  <!-- User Shoulders/Body -->
+  <path d="M 34 76 C 34 64 41 60 50 60 C 59 60 66 64 66 76 Z" fill="none" stroke="#AD8B52" stroke-width="3.5" stroke-linejoin="round" />
+  
+  <!-- Top Sparkle -->
+  <path d="M 75 42 Q 78 42 78 39 Q 78 42 81 42 Q 78 42 78 45 Q 78 42 75 42 Z" fill="none" stroke="#AD8B52" stroke-width="2" stroke-linejoin="round" />
+  
+  <!-- Bottom Sparkle -->
+  <path d="M 83 55 Q 85 55 85 53 Q 85 55 87 55 Q 85 55 85 57 Q 85 55 83 55 Z" fill="none" stroke="#AD8B52" stroke-width="1.5" stroke-linejoin="round" />
+</svg>
