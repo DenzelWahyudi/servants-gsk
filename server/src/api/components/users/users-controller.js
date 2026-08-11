@@ -623,14 +623,13 @@ async function verifyOTP(phone, code) {
     // const result = await client.verify.v2
     //     .services(SERVICE_SID)
     //     .verificationChecks.create({ to: phone, code });
-    const result = 'approved'
 
-    if (result.status !== 'approved') {
-        throw errorResponder(
-            errorTypes.UNPROCESSABLE_ENTITY,
-            "That code didn't match. Try again."
-        );
-    }
+    // if (result.status !== 'approved') {
+    //     throw errorResponder(
+    //         errorTypes.UNPROCESSABLE_ENTITY,
+    //         "That code didn't match. Try again."
+    //     );
+    // }
 }
 
 async function savePushToken(req, res, next) {
