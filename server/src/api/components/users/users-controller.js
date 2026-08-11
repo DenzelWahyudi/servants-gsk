@@ -434,7 +434,6 @@ async function login(req, res, next) {
         const token = jwt.sign(
             { id: user.id, name: user.name, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
         );
 
         return res.status(200).json({
@@ -498,7 +497,7 @@ async function loginAdmin(req, res, next) {
         const token = jwt.sign(
             { id: user.id, name: user.name, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            { expiresIn: '365d' }
         );
 
         return res.status(200).json({
