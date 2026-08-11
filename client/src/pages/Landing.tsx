@@ -451,10 +451,10 @@ export function Landing() {
                 <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-amber-400/5 via-transparent to-indigo-600/5" />
                 <div className="relative mx-auto max-w-4xl">
                     <div className="grid grid-cols-2 gap-8 rounded-2xl border border-slate-700/50 bg-slate-800/30 p-8 backdrop-blur-sm sm:grid-cols-4 sm:gap-12 sm:p-12">
-                        <StatCard label="Services Organized" target={320} suffix="+" />
-                        <StatCard label="Volunteers Served" target={150} suffix="+" />
-                        <StatCard label="Roles Filled" target={1200} suffix="+" />
-                        <StatCard label="Reminders Sent" target={4800} suffix="+" />
+                        <StatCard label="Services Organized" target={0} suffix="+" />
+                        <StatCard label="Volunteers Served" target={0} suffix="+" />
+                        <StatCard label="Roles Filled" target={0} suffix="+" />
+                        <StatCard label="Reminders Sent" target={0} suffix="+" />
                     </div>
                 </div>
             </section>
