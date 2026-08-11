@@ -646,7 +646,7 @@ export function Chats() {
                         ) : (
                             <textarea
                                 ref={textareaRef}
-                                className="max-h-32 w-full resize-none overflow-y-hidden rounded-2xl border border-slate-600 bg-slate-700 px-3 py-1.5 text-sm leading-normal text-zinc-100 transition-colors outline-none focus:border-amber-400"
+                                className="max-h-32 w-full resize-none overflow-y-hidden rounded-2xl border border-slate-600 bg-slate-700 px-3 py-1.5 text-base leading-normal text-zinc-100 transition-colors outline-none focus:border-amber-400"
                                 rows={1}
                                 value={message.message}
                                 onChange={handleChange("message")}
