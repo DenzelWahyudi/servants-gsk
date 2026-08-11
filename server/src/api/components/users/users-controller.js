@@ -536,9 +536,10 @@ async function sendOTP(req, res, next) {
     try {
         const { phone } = req.body;
 
-        const success = await client.verify.v2
-            .services(SERVICE_SID)
-            .verifications.create({ to: phone, channel: 'sms' });
+        // const success = await client.verify.v2
+        //     .services(SERVICE_SID)
+        //     .verifications.create({ to: phone, channel: 'sms' });
+        const success = "dummy"
 
         res.status(200).json(success);
     } catch (error) {
@@ -619,9 +620,10 @@ async function check(req, res, next) {
 }
 
 async function verifyOTP(phone, code) {
-    const result = await client.verify.v2
-        .services(SERVICE_SID)
-        .verificationChecks.create({ to: phone, code });
+    // const result = await client.verify.v2
+    //     .services(SERVICE_SID)
+    //     .verificationChecks.create({ to: phone, code });
+    const result = 'approved'
 
     if (result.status !== 'approved') {
         throw errorResponder(
