@@ -16,25 +16,25 @@ async function migrateDbAsync(db: SQLiteDatabase) {
 }
 
 export default function RootLayout() {
-    // const appState = useRef(AppState.currentState)
+    const appState = useRef(AppState.currentState)
 
-    // useEffect(() => {
-    //     // Clear notifications if the app is opened directly
-    //     void dismissAllNotifications()
+    useEffect(() => {
+        // Clear notifications if the app is opened directly
+        void dismissAllNotifications()
 
-    //     // Listen for app state changes to clear notifications when returning from background
-    //     const subscription = AppState.addEventListener("change", (nextAppState) => {
-    //         if (appState.current.match(/inactive|background/) && nextAppState === "active") {
-    //             // User has entered the app, dismiss all notifications
-    //             void dismissAllNotifications()
-    //         }
-    //         appState.current = nextAppState
-    //     })
+        // Listen for app state changes to clear notifications when returning from background
+        const subscription = AppState.addEventListener("change", (nextAppState) => {
+            if (appState.current.match(/inactive|background/) && nextAppState === "active") {
+                // User has entered the app, dismiss all notifications
+                void dismissAllNotifications()
+            }
+            appState.current = nextAppState
+        })
 
-    //     return () => {
-    //         subscription.remove()
-    //     }
-    // }, [])
+        return () => {
+            subscription.remove()
+        }
+    }, [])
 
     return (
         <AuthProvider>

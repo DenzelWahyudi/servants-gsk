@@ -6,28 +6,28 @@ import { useAuth } from "@/hooks/useAuth"
 import { API_URL } from "../../../api"
 
 export default function TabLayout() {
-    // const { token } = useAuth()
+    const { token } = useAuth()
 
-    // useEffect(() => {
-    //     if (!token) return
+    useEffect(() => {
+        if (!token) return
 
-    //     registerForPushNotificationsAsync().then(async (pushToken) => {
-    //         if (pushToken) {
-    //             try {
-    //                 await fetch(`${API_URL}/api/users/push-token`, {
-    //                     method: "PUT",
-    //                     headers: {
-    //                         "Content-Type": "application/json",
-    //                         Authorization: `Bearer ${token}`
-    //                     },
-    //                     body: JSON.stringify({ pushToken })
-    //                 })
-    //             } catch (error) {
-    //                 console.error("Failed to save push token to DB", error)
-    //             }
-    //         }
-    //     })
-    // }, [token])
+        registerForPushNotificationsAsync().then(async (pushToken) => {
+            if (pushToken) {
+                try {
+                    await fetch(`${API_URL}/api/users/push-token`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ pushToken })
+                    })
+                } catch (error) {
+                    console.error("Failed to save push token to DB", error)
+                }
+            }
+        })
+    }, [token])
 
     return (
         <Tabs
