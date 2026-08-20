@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "GSK",
-    "slug": "servants",
+    "slug": "servants-gsk",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -49,9 +49,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "fce7cdc4-cbc0-4c41-a8ba-c5e0d6ff7ec5"
+        "projectId": "e1e33409-74f4-48bc-9b0b-bdad8ce8ba53"
       }
     },
-    "owner": "markie77"
+    "owner": "markieuntars-team"
   }
 }
