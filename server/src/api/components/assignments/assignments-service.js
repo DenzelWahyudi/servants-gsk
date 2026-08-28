@@ -1,5 +1,4 @@
 const assignmentsRepository = require('./assignments-repository');
-const rolesRepository = require('../roles/roles-repository');
 
 async function createAssignment(userId, roleId, status) {
     return assignmentsRepository.createAssignment(userId, roleId, status);
@@ -30,7 +29,6 @@ async function getUsersToRelieve(roleId) {
 }
 
 async function relieveUser(userId, roleId) {
-    await rolesRepository.decreaseRoleSpotsFilled(roleId);
     return assignmentsRepository.relieveUser(userId, roleId);
 }
 

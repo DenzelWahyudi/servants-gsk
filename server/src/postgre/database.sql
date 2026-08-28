@@ -41,6 +41,58 @@ CREATE TABLE assignments(
     status          assignment_status NOT NULL  DEFAULT 'pending'
 );
 
+CREATE OR REPLACE FUNCTION sync_role_spots_filled()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.status = 'confirmed' THEN
+            UPDATE roles
+            SET spots_filled = spots_filled + 1
+            WHERE id = NEW.role_id;
+        END IF;
+
+        RETURN NEW;
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        IF OLD.status = 'confirmed' THEN
+            UPDATE roles
+            SET spots_filled = GREATEST(spots_filled - 1, 0)
+            WHERE id = OLD.role_id;
+        END IF;
+
+        RETURN OLD;
+    END IF;
+
+    IF OLD.status = 'confirmed'
+        AND (
+            NEW.status <> 'confirmed'
+            OR OLD.role_id IS DISTINCT FROM NEW.role_id
+        ) THEN
+        UPDATE roles
+        SET spots_filled = GREATEST(spots_filled - 1, 0)
+        WHERE id = OLD.role_id;
+    END IF;
+
+    IF NEW.status = 'confirmed'
+        AND (
+            OLD.status <> 'confirmed'
+            OR OLD.role_id IS DISTINCT FROM NEW.role_id
+        ) THEN
+        UPDATE roles
+        SET spots_filled = spots_filled + 1
+        WHERE id = NEW.role_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER sync_role_spots_filled_trigger
+AFTER INSERT OR DELETE OR UPDATE OF status, role_id ON assignments
+FOR EACH ROW
+EXECUTE FUNCTION sync_role_spots_filled();
+
 CREATE TYPE chat_status as ENUM ('success', 'pending', 'failed');
 
 CREATE TABLE chats(

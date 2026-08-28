@@ -50,22 +50,6 @@ async function deleteRoles(serviceId) {
     return pool.query('DELETE FROM roles WHERE service_id = $1', [serviceId]);
 }
 
-async function increaseRoleSpotsFilled(id) {
-    const result = await pool.query(
-        'UPDATE roles SET spots_filled = spots_filled + 1 WHERE id = $1 RETURNING *',
-        [id]
-    );
-    return toCamelCase(result.rows[0]);
-}
-
-async function decreaseRoleSpotsFilled(id) {
-    const result = await pool.query(
-        'UPDATE roles SET spots_filled = spots_filled - 1 WHERE id = $1 RETURNING *',
-        [id]
-    );
-    return toCamelCase(result.rows[0]);
-}
-
 async function getAssignedUsersForRoles(serviceId) {
     const result = await pool.query(
         `
@@ -98,7 +82,5 @@ module.exports = {
     getRole,
     getAllRoles,
     deleteRoles,
-    increaseRoleSpotsFilled,
-    decreaseRoleSpotsFilled,
     getAssignedUsersForRoles,
 };

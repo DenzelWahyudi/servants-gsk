@@ -22,10 +22,6 @@ async function deleteRoles(serviceId) {
     return rolesRepository.deleteRoles(serviceId);
 }
 
-async function increaseRoleSpotsFilled(id) {
-    return rolesRepository.increaseRoleSpotsFilled(id);
-}
-
 async function getAssignedUsersForRoles(serviceId) {
     return rolesRepository.getAssignedUsersForRoles(serviceId);
 }
@@ -36,6 +32,5 @@ module.exports = {
     getAllRoles,
     getRole,
     deleteRoles,
-    increaseRoleSpotsFilled,
     getAssignedUsersForRoles,
 };

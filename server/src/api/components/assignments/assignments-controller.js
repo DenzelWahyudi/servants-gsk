@@ -1,5 +1,5 @@
 const assignmentsService = require('./assignments-service');
-const { getRole, increaseRoleSpotsFilled } = require('../roles/roles-service');
+const { getRole } = require('../roles/roles-service');
 const { errorResponder, errorTypes } = require('../../../core/errors');
 const { getUser } = require('../users/users-service');
 
@@ -93,8 +93,6 @@ async function adminCreateAssignment(req, res, next) {
             );
         }
 
-        if (status === 'confirmed') await increaseRoleSpotsFilled(roleId);
-
         const success = await assignmentsService.createAssignment(
             userId,
             roleId,
@@ -152,7 +150,7 @@ async function getPendingStatusAssignments(req, res, next) {
 async function updateStatus(req, res, next) {
     try {
         const assignmentId = req.params.id;
-        const { status, roleId } = req.body;
+        const { status } = req.body;
         const user = await getUser(req.user.id);
 
         if (user.role !== 'admin') {
@@ -175,8 +173,6 @@ async function updateStatus(req, res, next) {
                 'Status type empty'
             );
         }
-
-        if (status === 'confirmed') await increaseRoleSpotsFilled(roleId);
 
         const success = await assignmentsService.updateStatus(
             assignmentId,
