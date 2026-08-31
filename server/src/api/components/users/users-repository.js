@@ -12,7 +12,7 @@ async function getUser(id) {
 
 async function getUsers() {
     const result = await pool.query(
-        'SELECT id, name, email, phone_number, push_token, role FROM users'
+        'SELECT id, name, email, phone_number, push_token, role, created_at FROM users'
     );
     return toCamelCaseRows(result.rows);
 }
