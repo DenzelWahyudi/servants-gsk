@@ -1,7 +1,7 @@
 import { Button } from "./Button"
 import { ButtonLink } from "./ButtonLink"
 
-type Variant = "services" | "roles" | "admissions" | "users"
+type Variant = "services" | "roles" | "admissions" | "users" | "warta"
 
 type SidebarProps = {
     variant?: Variant
@@ -50,6 +50,12 @@ function getVariantStyles(variant: Variant) {
                             <span>Users</span>
                         </div>
                     </ButtonLink>
+                    <ButtonLink to="/admin/warta" variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>📰</span>
+                            <span>Warta</span>
+                        </div>
+                    </ButtonLink>
                 </>
             )
         case "roles":
@@ -77,6 +83,12 @@ function getVariantStyles(variant: Variant) {
                         <div className="flex gap-2">
                             <span>👥</span>
                             <span>Users</span>
+                        </div>
+                    </ButtonLink>
+                    <ButtonLink to="/admin/warta" variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>📰</span>
+                            <span>Warta</span>
                         </div>
                     </ButtonLink>
                 </>
@@ -108,6 +120,12 @@ function getVariantStyles(variant: Variant) {
                             <span>Users</span>
                         </div>
                     </ButtonLink>
+                    <ButtonLink to="/admin/warta" variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>📰</span>
+                            <span>Warta</span>
+                        </div>
+                    </ButtonLink>
                 </>
             )
         case "users":
@@ -135,6 +153,47 @@ function getVariantStyles(variant: Variant) {
                         <div className="flex gap-2">
                             <span>👥</span>
                             <span>Users</span>
+                        </div>
+                    </Button>
+                    <ButtonLink to="/admin/warta" variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>📰</span>
+                            <span>Warta</span>
+                        </div>
+                    </ButtonLink>
+                </>
+            )
+        case "warta":
+            return (
+                <>
+                    <ButtonLink to="/admin/services" variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>🛠️</span>
+                            <span>Services</span>
+                        </div>
+                    </ButtonLink>
+                    <ButtonLink to="/admin/roles" variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>🗓️</span>
+                            <span>Roles</span>
+                        </div>
+                    </ButtonLink>
+                    <ButtonLink to="/admin/admissions" variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>🎟️</span>
+                            <span>Admissions</span>
+                        </div>
+                    </ButtonLink>
+                    <ButtonLink to="/admin/users" variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>👥</span>
+                            <span>Users</span>
+                        </div>
+                    </ButtonLink>
+                    <Button variant="sidebar">
+                        <div className="flex gap-2">
+                            <span>📰</span>
+                            <span>Warta</span>
                         </div>
                     </Button>
                 </>

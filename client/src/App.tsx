@@ -16,6 +16,7 @@ import { Chats } from "./pages/Chats"
 import { AdminUsers } from "./pages/AdminUsers"
 import { ForgotPassword } from "./pages/ForgotPassword.tsx"
 import { Landing } from "./pages/Landing"
+import { AdminWarta } from "./pages/AdminWarta.tsx"
 
 export default function App() {
     return (
@@ -100,6 +101,14 @@ export default function App() {
                         element={
                             <ProtectedRoute requiredRole="admin">
                                 <AdminUsers />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/warta"
+                        element={
+                            <ProtectedRoute requiredRole="admin">
+                                <AdminWarta />
                             </ProtectedRoute>
                         }
                     />
