@@ -17,6 +17,7 @@ import { AdminUsers } from "./pages/AdminUsers"
 import { ForgotPassword } from "./pages/ForgotPassword.tsx"
 import { Landing } from "./pages/Landing"
 import { AdminWarta } from "./pages/AdminWarta.tsx"
+import { WartaPreview } from "./pages/WartaPreview.tsx"
 
 export default function App() {
     return (
@@ -109,6 +110,14 @@ export default function App() {
                         element={
                             <ProtectedRoute requiredRole="admin">
                                 <AdminWarta />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/warta/preview"
+                        element={
+                            <ProtectedRoute requiredRole="admin">
+                                <WartaPreview />
                             </ProtectedRoute>
                         }
                     />

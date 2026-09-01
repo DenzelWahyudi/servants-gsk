@@ -31,13 +31,13 @@ export function AdminRoles() {
     }, [])
 
     return (
-        <div className="flex h-screen flex-col overflow-y-auto">
+        <div className="flex h-screen flex-col overflow-hidden">
             <div className="px-6.5 py-4">
                 <Header variant="admin" />
             </div>
-            <div className="flex flex-1">
+            <div className="flex min-h-0 flex-1">
                 <Sidebar variant="roles" />
-                <div className="flex h-full w-full flex-col bg-zinc-100/2 px-10">
+                <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-zinc-100/2 px-10">
                     <div className="flex items-center justify-between py-7">
                         <Heading>Manage Roles</Heading>
                     </div>
@@ -51,7 +51,7 @@ export function AdminRoles() {
                             />
                         </div>
                     ))}
-                </div>
+                </main>
             </div>
         </div>
     )

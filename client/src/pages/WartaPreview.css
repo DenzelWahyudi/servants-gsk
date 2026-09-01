@@ -1,0 +1,553 @@
+.warta-preview {
+    min-height: 100vh;
+    background: #0f172a;
+    color: #f4f4f5;
+}
+
+.warta-preview-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid #334155;
+    background: rgb(15 23 42 / 94%);
+    padding: 1rem 2rem;
+    backdrop-filter: blur(12px);
+}
+
+.warta-preview-toolbar h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.warta-preview-eyebrow {
+    margin-bottom: 0.15rem;
+    color: #fbbf24;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.warta-preview-actions {
+    display: flex;
+    gap: 0.65rem;
+}
+
+.warta-preview-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 1px solid #64748b;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    color: #f4f4f5;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: 150ms ease;
+}
+
+.warta-preview-actions button:hover:not(:disabled) {
+    border-color: #fbbf24;
+    color: #fbbf24;
+}
+
+.warta-preview-actions .warta-print-button {
+    border-color: #fbbf24;
+    background: #fbbf24;
+    color: #0f172a;
+}
+
+.warta-preview-actions .warta-print-button:hover:not(:disabled) {
+    background: #f59e0b;
+    color: #0f172a;
+}
+
+.warta-preview-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+.warta-preview-status {
+    max-width: 72rem;
+    margin: 1rem auto 0;
+    padding: 0 2rem;
+    color: #cbd5e1;
+    font-size: 0.8rem;
+}
+
+.warta-preview-status > p,
+.warta-preview-status > div {
+    border: 1px solid #475569;
+    border-radius: 0.6rem;
+    background: #1e293b;
+    padding: 0.75rem 1rem;
+}
+
+.warta-preview-status ul {
+    margin: 0.35rem 0;
+    padding-left: 1.25rem;
+    list-style: disc;
+}
+
+.warta-status-error {
+    border-color: rgb(248 113 113 / 55%) !important;
+    background: rgb(127 29 29 / 30%) !important;
+    color: #fecaca;
+}
+
+.warta-status-ready {
+    border-color: rgb(52 211 153 / 45%) !important;
+    background: rgb(6 78 59 / 25%) !important;
+    color: #a7f3d0;
+}
+
+.warta-preview-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+    overflow-x: auto;
+    padding: 1.5rem 2rem 3rem;
+}
+
+.warta-sheet-group {
+    flex: none;
+}
+
+.warta-side-label {
+    margin-bottom: 0.55rem;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.warta-sheet-frame {
+    width: 244.2mm;
+    height: 155.4mm;
+    box-shadow: 0 22px 55px rgb(2 6 23 / 45%);
+}
+
+.warta-sheet {
+    display: grid;
+    width: 330mm;
+    height: 210mm;
+    grid-template-columns: repeat(3, 1fr);
+    overflow: hidden;
+    transform: scale(0.74);
+    transform-origin: top left;
+    background: #fffdf8;
+    color: #292524;
+    font-family: Georgia, "Times New Roman", serif;
+    print-color-adjust: exact;
+}
+
+.warta-panel {
+    position: relative;
+    box-sizing: border-box;
+    height: 210mm;
+    overflow: hidden;
+    border-left: 0.25mm dashed rgb(120 113 108 / 35%);
+    background:
+        radial-gradient(circle at 5% 8%, rgb(196 181 253 / 18%), transparent 25%),
+        radial-gradient(circle at 95% 92%, rgb(253 186 116 / 15%), transparent 28%), #fffdf8;
+    padding: 7mm 7mm 6mm;
+    font-size: 9.2pt;
+    line-height: 1.36;
+}
+
+.warta-panel:first-child {
+    border-left: 0;
+}
+
+.warta-panel-overflow {
+    box-shadow: inset 0 0 0 1.1mm #ef4444;
+}
+
+.warta-overflow-badge {
+    position: absolute;
+    top: 2mm;
+    right: 2mm;
+    z-index: 4;
+    border-radius: 99px;
+    background: #dc2626;
+    padding: 1mm 2.5mm;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 7pt;
+    font-weight: 700;
+}
+
+.warta-panel-heading {
+    margin: 0 0 4mm;
+    border-bottom: 0.45mm solid #44403c;
+    padding-bottom: 1.5mm;
+    text-align: center;
+    font-size: 15pt;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.warta-prayer-list,
+.warta-bullet-list {
+    margin: 0 0 6mm;
+    padding-left: 5mm;
+}
+
+.warta-prayer-list li,
+.warta-bullet-list li {
+    margin-bottom: 1.2mm;
+}
+
+.warta-bullet-list {
+    list-style: disc;
+}
+
+.warta-prayer-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.warta-panel-bottom {
+    margin-top: auto;
+    padding-top: 3mm;
+}
+
+.warta-contact {
+    margin-top: 2mm;
+    color: #1e3a8a;
+    font-style: italic;
+    font-weight: 700;
+}
+
+.warta-schedule-list {
+    margin-top: 4mm;
+}
+
+.warta-schedule-list > div {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    gap: 3mm;
+    margin-bottom: 2mm;
+}
+
+.warta-schedule-list dt {
+    font-weight: 700;
+}
+
+.warta-greeting {
+    position: absolute;
+    right: 6mm;
+    bottom: 42mm;
+    left: 6mm;
+    white-space: pre-line;
+    text-align: center;
+    font-size: 20pt;
+    font-style: italic;
+    line-height: 1.35;
+}
+
+.warta-circulation {
+    position: absolute;
+    right: 6mm;
+    bottom: 9mm;
+    left: 6mm;
+    text-align: center;
+    font-size: 8pt;
+    font-style: italic;
+}
+
+.warta-cover-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.warta-cover-kicker {
+    margin-bottom: 10mm;
+    color: #312e81;
+    font-size: 19pt;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0.38em;
+}
+
+.warta-wordmark {
+    margin-bottom: 4mm;
+    color: #312e81;
+    font-size: 19pt;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0.38em;
+}
+
+.warta-cover-panel > img {
+    width: 37mm;
+    height: 37mm;
+    object-fit: contain;
+}
+
+.warta-church-details {
+    margin-top: 8mm;
+    line-height: 1.25;
+}
+
+.warta-church-details h2 {
+    margin-bottom: 1mm;
+    font-size: 14pt;
+    font-weight: 800;
+}
+
+.warta-church-details p {
+    font-size: 7.6pt;
+}
+
+.warta-church-details strong {
+    display: block;
+    margin-top: 1mm;
+    font-size: 9pt;
+}
+
+.warta-cover-service {
+    width: 100%;
+    margin-top: 4mm;
+    border-top: 0.45mm solid #44403c;
+    padding-top: 3mm;
+}
+
+.warta-cover-service h3 {
+    margin: 1.5mm 0;
+    font-size: 13pt;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.warta-cover-service strong {
+    display: block;
+    margin-bottom: 1.5mm;
+}
+
+.warta-welcome {
+    margin-top: 4mm;
+    font-size: 8.3pt;
+    line-height: 1.3;
+}
+
+.warta-renungan-title {
+    margin: 0 0 4mm;
+    text-align: center;
+    font-size: 12pt;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.warta-renungan-body p {
+    margin-bottom: 3mm;
+    text-align: justify;
+    text-indent: 7mm;
+}
+
+.warta-services-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4mm;
+}
+
+.warta-service-roster {
+    border-bottom: 0.25mm solid #a8a29e;
+    padding-bottom: 3mm;
+}
+
+.warta-service-roster:last-child {
+    border-bottom: 0;
+}
+
+.warta-service-roster h3 {
+    margin-bottom: 1.5mm;
+    font-size: 9.5pt;
+    font-weight: 800;
+}
+
+.warta-service-roster h3 span {
+    float: right;
+    font-size: 8pt;
+    font-weight: 600;
+}
+
+.warta-service-roster dl > div {
+    display: grid;
+    grid-template-columns: 35% 1fr;
+    gap: 2mm;
+}
+
+.warta-service-roster dt {
+    font-weight: 700;
+}
+
+.warta-service-roster dd::before {
+    content: ":";
+    margin-right: 2mm;
+}
+
+.warta-wordmark {
+    margin-bottom: 2mm;
+    text-align: center;
+    font-size: 17pt;
+}
+
+.warta-offering-table {
+    width: 100%;
+    margin-bottom: 5mm;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+}
+
+.warta-offering-table td {
+    border: 0.25mm solid #78716c;
+    padding: 1mm 1.5mm;
+}
+
+.warta-offering-table td:nth-child(2) {
+    width: 8mm;
+    border-right: 0;
+    text-align: right;
+}
+
+.warta-offering-table td:last-child {
+    width: 28mm;
+    border-left: 0;
+    text-align: right;
+}
+
+.warta-offering-total {
+    font-weight: 800;
+}
+
+.warta-bank-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3mm;
+}
+
+.warta-bank-list > div {
+    padding-left: 5mm;
+}
+
+.warta-bank-list > div::before {
+    content: "➤";
+    float: left;
+    margin-left: -5mm;
+}
+
+.warta-bank-list strong {
+    display: block;
+    font-style: italic;
+}
+
+.warta-verse-card {
+    margin-top: 6mm;
+    border-radius: 2mm;
+    background: linear-gradient(135deg, #eef2ff, #fef3c7);
+    padding: 5mm;
+    text-align: center;
+}
+
+.warta-verse-card p {
+    font-size: 10pt;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.warta-verse-card cite {
+    display: block;
+    margin-top: 2mm;
+    color: #312e81;
+    font-weight: 800;
+}
+
+@media (max-width: 800px) {
+    .warta-preview-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .warta-preview-actions {
+        width: 100%;
+    }
+
+    .warta-preview-actions button {
+        flex: 1;
+    }
+
+    .warta-preview-status {
+        padding: 0 1rem;
+    }
+
+    .warta-preview-pages {
+        align-items: flex-start;
+        padding-inline: 1rem;
+    }
+}
+
+@media print {
+    @page {
+        size: 330mm 210mm;
+        margin: 0;
+    }
+
+    body {
+        background: white !important;
+    }
+
+    .warta-preview-toolbar,
+    .warta-preview-status,
+    .warta-side-label {
+        display: none !important;
+    }
+
+    .warta-preview-pages {
+        display: block;
+        overflow: visible;
+        padding: 0;
+    }
+
+    .warta-sheet-group,
+    .warta-sheet-frame,
+    .warta-sheet {
+        width: 330mm;
+        height: 210mm;
+        margin: 0;
+        box-shadow: none;
+    }
+
+    .warta-sheet-group {
+        break-after: page;
+        page-break-after: always;
+    }
+
+    .warta-sheet-group:last-child {
+        break-after: auto;
+        page-break-after: auto;
+    }
+
+    .warta-sheet {
+        transform: none;
+    }
+
+    .warta-overflow-badge {
+        display: none;
+    }
+}
