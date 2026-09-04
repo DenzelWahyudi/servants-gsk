@@ -99,9 +99,13 @@ export function RolesCard({ serviceId, serviceName, serviceTime, serviceDate }: 
                             </td>
                             <td className="text-center">
                                 <span
-                                    className={`rounded-xl px-2.5 py-1 text-xs font-light text-zinc-100 shadow ${r.spotsFilled >= r.spotsTotal ? "bg-red-600" : "bg-green-600"}`}
+                                    className={`rounded-xl px-2.5 py-1 text-xs font-light text-zinc-100 shadow ${r.spotsFilled === r.spotsTotal ? "bg-red-600" : r.spotsFilled < r.spotsTotal ? "bg-green-600" : "bg-orange-600"}`}
                                 >
-                                    {r.spotsFilled >= r.spotsTotal ? "Filled" : "Open"}
+                                    {r.spotsFilled === r.spotsTotal
+                                        ? "Filled"
+                                        : r.spotsFilled < r.spotsTotal
+                                          ? "Open"
+                                          : "Over"}
                                 </span>
                             </td>
                             <td>
