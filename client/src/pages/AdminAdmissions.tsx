@@ -8,7 +8,6 @@ import { useAuth } from "../hooks/useAuth.ts"
 
 type AdmitCardProps = {
     id: string
-    roleId: string
     userName: string
     roleName: string
     serviceName: string
@@ -74,7 +73,6 @@ export function AdminAdmissions() {
                                 <AdmitCard
                                     id={a.id}
                                     userName={a.userName}
-                                    roleId={a.roleId}
                                     roleName={a.roleName}
                                     serviceName={a.serviceName}
                                     date={a.date}
@@ -96,7 +94,6 @@ export function AdminAdmissions() {
 function AdmitCard({
     id,
     userName,
-    roleId,
     roleName,
     serviceName,
     date,
@@ -108,32 +105,37 @@ function AdmitCard({
     const [loading, setLoading] = useState(false)
     const [declineLoading, setDeclineLoading] = useState(false)
 
-    async function handleUpdateStatus(assigmentId: string, status: string) {
+    async function handleUpdateStatus(assignmentId: string, status: "confirmed" | "declined") {
         if (status === "declined") setDeclineLoading(true)
         else setLoading(true)
         setError(null)
 
-        const response = await fetch(`${API_URL}/api/assignments/updatestatus/${assigmentId}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({ status, roleId })
-        })
-        const data = await response.json()
+        try {
+            const response = await fetch(
+                `${API_URL}/api/assignments/updatestatus/${assignmentId}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status })
+                }
+            )
+            const data = await response.json()
 
-        if (!response.ok) {
-            setError(data)
+            if (!response.ok) {
+                setError(data.message || "Failed to update assignment status")
+                return
+            }
+
+            onSave()
+        } catch {
+            setError("Could not connect to server")
+        } finally {
             setLoading(false)
             setDeclineLoading(false)
-            return
         }
-
-        setLoading(false)
-        setDeclineLoading(false)
-
-        onSave()
     }
 
     return (
@@ -153,9 +155,8 @@ function AdmitCard({
                 <button
                     onClick={() => {
                         void handleUpdateStatus(id, "declined")
-                        onSave()
                     }}
-                    disabled={declineLoading}
+                    disabled={loading || declineLoading}
                     className="font mt-auto flex w-22 justify-center rounded-lg bg-zinc-500 px-2 py-1 text-sm text-zinc-100 transition-colors hover:bg-zinc-600"
                 >
                     {declineLoading ? "Loading" : "Decline"}
@@ -164,7 +165,7 @@ function AdmitCard({
                     onClick={() => {
                         void handleUpdateStatus(id, "confirmed")
                     }}
-                    disabled={loading}
+                    disabled={loading || declineLoading}
                     className="mt-auto flex w-22 justify-center rounded-lg bg-amber-400 px-2 py-1 text-sm font-medium text-slate-900 transition-colors hover:bg-amber-500"
                 >
                     {loading ? "Loading" : "Confirm"}

@@ -95,9 +95,11 @@ export function UpcomingServicesAdmin() {
             }
 
             setServices((prev) => prev?.filter((s) => s.id !== serviceId) ?? null)
-            setLoading(false)
+            setToBeDelete(null)
         } catch {
             setError("Could not connect to the server. Please try again.")
+        } finally {
+            setLoading(false)
         }
     }
 

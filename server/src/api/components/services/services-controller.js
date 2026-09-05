@@ -3,6 +3,26 @@ const { createRoles, deleteRoles } = require('../roles/roles-service');
 const { deleteFiles } = require('../chats/chats-service');
 const { errorResponder, errorTypes } = require('../../../core/errors');
 const { getUser } = require('../users/users-service');
+const { getGroupDetails } = require('../assignments/assignments-service');
+const { sendPushNotifications } = require('../../../utils/pushNotifications');
+
+async function notifyServiceMembers(members, title, body, data) {
+    const tokens = [
+        ...new Set(
+            members
+                .map((member) => member.pushToken)
+                .filter((pushToken) => pushToken)
+        ),
+    ];
+
+    if (tokens.length === 0) return;
+
+    try {
+        await sendPushNotifications(tokens, title, body, data);
+    } catch (error) {
+        console.error('Failed to send service notification:', error);
+    }
+}
 
 async function createService(req, res, next) {
     try {
@@ -138,6 +158,8 @@ async function deleteService(req, res, next) {
             );
         }
 
+        const members = await getGroupDetails(serviceId);
+
         const successRoles = await deleteRoles(serviceId);
         if (!successRoles) {
             throw errorResponder(
@@ -161,6 +183,13 @@ async function deleteService(req, res, next) {
                 'Failed to delete service'
             );
         }
+
+        await notifyServiceMembers(
+            members,
+            'Service Cancelled',
+            `${service.name} has been cancelled.`,
+            { serviceId, reason: 'deleted' }
+        );
 
         return res
             .status(201)
@@ -223,6 +252,8 @@ async function updateService(req, res, next) {
             );
         }
 
+        const members = await getGroupDetails(serviceId);
+
         const successRoles = await deleteRoles(serviceId);
         if (!successRoles) {
             throw errorResponder(
@@ -269,6 +300,13 @@ async function updateService(req, res, next) {
                 );
             }
         }
+
+        await notifyServiceMembers(
+            members,
+            'Service Assignment Cancelled',
+            `Your assignment to ${service.name} was cancelled because the service was updated. Please review the updated service.`,
+            { serviceId, reason: 'updated' }
+        );
 
         return res
             .status(200)

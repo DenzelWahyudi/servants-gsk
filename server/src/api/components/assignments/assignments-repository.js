@@ -73,16 +73,36 @@ async function getAllUserAssignments(userId) {
 }
 
 async function updateStatus(assignmentId, status) {
-    return pool.query('UPDATE assignments SET status = $1 WHERE id = $2', [
-        status,
-        assignmentId,
-    ]);
+    const result = await pool.query(
+        `
+        WITH updated_assignment AS (
+            UPDATE assignments
+            SET status = $1
+            WHERE id = $2 AND status = 'pending'
+            RETURNING id, user_id, role_id, status
+        )
+        SELECT
+            a.id,
+            a.status,
+            a.role_id,
+            u.push_token,
+            r.name AS role_name,
+            s.id AS service_id,
+            s.name AS service_name
+        FROM updated_assignment a
+        JOIN users u ON a.user_id = u.id
+        JOIN roles r ON a.role_id = r.id
+        JOIN services s ON r.service_id = s.id
+        `,
+        [status, assignmentId]
+    );
+    return toCamelCase(result.rows[0]);
 }
 
 async function getUsersToRelieve(roleId) {
     const result = await pool.query(
         `
-        SELECT u.id AS user_id, u.name
+        SELECT u.id AS user_id, u.name, u.push_token
         FROM assignments a
         JOIN users u ON a.user_id = u.id
         WHERE a.role_id = $1 AND a.status = 'confirmed'

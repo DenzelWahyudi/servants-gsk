@@ -2,6 +2,7 @@ const assignmentsService = require('./assignments-service');
 const { getRole } = require('../roles/roles-service');
 const { errorResponder, errorTypes } = require('../../../core/errors');
 const { getUser } = require('../users/users-service');
+const { sendPushNotifications } = require('../../../utils/pushNotifications');
 
 async function createAssignment(req, res, next) {
     try {
@@ -55,7 +56,8 @@ async function createAssignment(req, res, next) {
 
 async function adminCreateAssignment(req, res, next) {
     try {
-        const { userId, roleId, status } = req.body;
+        const { userId, roleId, status, pushToken, serviceName, roleName } =
+            req.body;
         const user = await getUser(req.user.id);
 
         if (user.role !== 'admin') {
@@ -103,6 +105,19 @@ async function adminCreateAssignment(req, res, next) {
                 errorTypes.UNPROCESSABLE_ENTITY,
                 'Failed to create assignment.'
             );
+        }
+
+        if (pushToken) {
+            try {
+                await sendPushNotifications(
+                    [pushToken],
+                    'New Service Assignment',
+                    `You've been assigned to ${serviceName} with the role of ${roleName}`,
+                    { roleId }
+                );
+            } catch (error) {
+                console.error('Failed to send assignment notification:', error);
+            }
         }
 
         return res.status(201).json({ message: 'Create assignment success!' });
@@ -174,6 +189,13 @@ async function updateStatus(req, res, next) {
             );
         }
 
+        if (!['confirmed', 'declined'].includes(status)) {
+            throw errorResponder(
+                errorTypes.UNPROCESSABLE_ENTITY,
+                'Status type invalid'
+            );
+        }
+
         const success = await assignmentsService.updateStatus(
             assignmentId,
             status
@@ -186,7 +208,27 @@ async function updateStatus(req, res, next) {
             );
         }
 
-        return res.status(200).json(success);
+        if (success.pushToken) {
+            const accepted = status === 'confirmed';
+
+            try {
+                await sendPushNotifications(
+                    [success.pushToken],
+                    accepted ? 'Application Accepted' : 'Application Declined',
+                    `Your request to serve at ${success.serviceName} as ${success.roleName} has been ${accepted ? 'accepted' : 'declined'}.`,
+                    {
+                        roleId: success.roleId,
+                        serviceId: success.serviceId,
+                    }
+                );
+            } catch (error) {
+                console.error('Failed to send admission notification:', error);
+            }
+        }
+
+        const updatedAssignment = { ...success };
+        delete updatedAssignment.pushToken;
+        return res.status(200).json(updatedAssignment);
     } catch (error) {
         next(error);
     }
@@ -232,7 +274,7 @@ async function getUsersToRelieve(req, res, next) {
 
 async function relieveUser(req, res, next) {
     try {
-        const { userId, roleId } = req.body;
+        const { userId, roleId, pushToken, serviceName, roleName } = req.body;
         const user = await getUser(req.user.id);
 
         if (user.role !== 'admin') {
@@ -244,11 +286,24 @@ async function relieveUser(req, res, next) {
 
         const success = await assignmentsService.relieveUser(userId, roleId);
 
-        if (!success) {
+        if (!success || success.rowCount === 0) {
             throw errorResponder(
                 errorTypes.UNPROCESSABLE_ENTITY,
                 'Failed to relieve user'
             );
+        }
+
+        if (pushToken) {
+            try {
+                await sendPushNotifications(
+                    [pushToken],
+                    'Service Assignment Ended',
+                    `You are no longer assigned to ${serviceName} as ${roleName}`,
+                    { roleId }
+                );
+            } catch (error) {
+                console.error('Failed to send relief notification:', error);
+            }
         }
 
         return res.status(200).json({ message: 'Relieve user successful' });
