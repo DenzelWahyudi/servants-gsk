@@ -47,7 +47,7 @@ async function sendChat(req, res, next) {
             if (tokens.length > 0) {
                 await sendPushNotifications(
                     tokens,
-                    `New message from ${userName}`,
+                    `Pesan baru dari ${userName}`,
                     message,
                     { serviceId }
                 );

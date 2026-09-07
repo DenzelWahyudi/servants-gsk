@@ -111,8 +111,8 @@ async function adminCreateAssignment(req, res, next) {
             try {
                 await sendPushNotifications(
                     [pushToken],
-                    'New Service Assignment',
-                    `You've been assigned to ${serviceName} with the role of ${roleName}`,
+                    'Penugasan Pelayanan Baru',
+                    `Anda telah ditugaskan untuk pelayanan ${serviceName} sebagai ${roleName}.`,
                     { roleId }
                 );
             } catch (error) {
@@ -214,8 +214,8 @@ async function updateStatus(req, res, next) {
             try {
                 await sendPushNotifications(
                     [success.pushToken],
-                    accepted ? 'Application Accepted' : 'Application Declined',
-                    `Your request to serve at ${success.serviceName} as ${success.roleName} has been ${accepted ? 'accepted' : 'declined'}.`,
+                    accepted ? 'Pendaftaran Diterima' : 'Pendaftaran Ditolak',
+                    `Pendaftaran Anda untuk melayani di ${success.serviceName} sebagai ${success.roleName} telah ${accepted ? 'diterima' : 'ditolak'}.`,
                     {
                         roleId: success.roleId,
                         serviceId: success.serviceId,
@@ -297,8 +297,8 @@ async function relieveUser(req, res, next) {
             try {
                 await sendPushNotifications(
                     [pushToken],
-                    'Service Assignment Ended',
-                    `You are no longer assigned to ${serviceName} as ${roleName}`,
+                    'Penugasan Pelayanan Berakhir',
+                    `Anda tidak lagi ditugaskan untuk pelayanan ${serviceName} sebagai ${roleName}.`,
                     { roleId }
                 );
             } catch (error) {

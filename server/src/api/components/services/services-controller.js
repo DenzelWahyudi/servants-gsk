@@ -186,8 +186,8 @@ async function deleteService(req, res, next) {
 
         await notifyServiceMembers(
             members,
-            'Service Cancelled',
-            `${service.name} has been cancelled.`,
+            'Pelayanan Dibatalkan',
+            `${service.name} telah dibatalkan.`,
             { serviceId, reason: 'deleted' }
         );
 
@@ -303,8 +303,8 @@ async function updateService(req, res, next) {
 
         await notifyServiceMembers(
             members,
-            'Service Assignment Cancelled',
-            `Your assignment to ${service.name} was cancelled because the service was updated. Please review the updated service.`,
+            'Penugasan Pelayanan Dibatalkan',
+            `Penugasan Anda untuk pelayanan ${service.name} dibatalkan karena pelayanan tersebut diperbarui. Silakan periksa kembali pelayanan yang telah diperbarui.`,
             { serviceId, reason: 'updated' }
         );
 
