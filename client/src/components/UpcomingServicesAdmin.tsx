@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react"
-import { Trash2, Pencil } from "lucide-react"
+import { Copy, Trash2, Pencil } from "lucide-react"
 import { API_URL } from "../api"
 import { format } from "date-fns"
-import { useNavigate } from "react-router-dom"
 import { Form } from "./Form"
 import { Heading } from "./Heading"
 import { useAuth } from "../hooks/useAuth.ts"
@@ -13,25 +12,15 @@ type Role2 = {
     spotsTotal: number | string
 }
 
-type SavedRole = {
+type ServiceFormState = {
     id: string
-    serviceId: string
-    name: string
+    mode: "edit" | "duplicate"
 }
 
-type EditServiceFormProps = {
-    id: string
-    onClose?: () => void
-    onSave?: (updated: Service & { roles: SavedRole[] }) => void
+type ServiceFormProps = ServiceFormState & {
+    onClose: () => void
+    onSave: () => void
     token: string | null
-}
-
-interface Service {
-    id: string
-    name: string
-    date: string
-    time: string
-    status: string
 }
 
 interface RoleInterface {
@@ -57,24 +46,38 @@ interface Service {
 export function UpcomingServicesAdmin() {
     const [services, setServices] = useState<Service[] | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [editingId, setEditingId] = useState<string | null>(null)
+    const [serviceForm, setServiceForm] = useState<ServiceFormState | null>(null)
+    const [refreshKey, setRefreshKey] = useState(0)
     const [toBeDelete, setToBeDelete] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const { token } = useAuth()
 
     useEffect(() => {
+        const controller = new AbortController()
+
         async function fetchServices() {
-            const response = await fetch(`${API_URL}/api/services/with-roles`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
+            try {
+                const response = await fetch(`${API_URL}/api/services/with-roles`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    signal: controller.signal
+                })
+                if (!response.ok) {
+                    throw new Error("Failed to load services")
                 }
-            })
-            const data: Service[] = await response.json()
-            setServices(data)
+                const data: Service[] = await response.json()
+                if (!controller.signal.aborted) setServices(data)
+            } catch {
+                if (!controller.signal.aborted) {
+                    setError("Could not load services. Please refresh the page to try again.")
+                }
+            }
         }
         void fetchServices()
-    }, [])
+        return () => controller.abort()
+    }, [refreshKey])
 
     async function handleDelete(serviceId: string) {
         setLoading(true)
@@ -127,27 +130,28 @@ export function UpcomingServicesAdmin() {
     }
 
     return (
-        <section className="border-b border-zinc-200 bg-white py-4">
+        <section className="min-w-[900px] border-b border-zinc-200 bg-white py-4">
             <h2 className="mb-3 text-center text-3xl font-semibold text-slate-900">
                 Upcoming Services
             </h2>
+            {error && <p className="mb-3 px-3 text-sm text-red-600">{error}</p>}
             <table className="w-full table-fixed text-left text-sm text-zinc-300">
                 <thead className="border-t-2 border-b-2 border-amber-400 text-zinc-950">
                     <tr>
                         <th className="w-[18%] py-2 pl-3">Upcoming Service</th>
-                        <th className="w-[14%]">Date</th>
-                        <th className="w-[13%]">Time</th>
-                        <th className="w-[33%]">Roles Needed</th>
-                        <th className="w-[11%] text-center">Status</th>
-                        <th className="w-[11%] text-center">Actions</th>
+                        <th className="w-[16%]">Date</th>
+                        <th className="w-[13%] pr-3">Time</th>
+                        <th>Roles Needed</th>
+                        <th className="w-32 text-center">Status</th>
+                        <th className="w-36 text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {services?.map((s, index) => (
                         <tr key={s.id} className="border-b border-zinc-400 text-zinc-950">
                             <td className="pl-3 font-medium wrap-break-word">{s.name}</td>
-                            <td>{format(new Date(s.date), "dd MMMM yyyy")}</td>
-                            <td>{s.time}</td>
+                            <td className="pr-3">{format(new Date(s.date), "dd MMMM yyyy")}</td>
+                            <td className="pr-3 wrap-break-word">{s.time}</td>
                             <td className="py-3 pr-4 wrap-break-word">
                                 {s.roles?.map((r) => r.name).join(", ") ?? "..."}
                             </td>
@@ -170,14 +174,28 @@ export function UpcomingServicesAdmin() {
                             <td>
                                 <div className="flex items-center justify-center gap-1">
                                     <button
-                                        onClick={() => setEditingId(s.id)}
-                                        className="rounded-lg border border-zinc-400 bg-zinc-100 px-2 py-1.5 transition-colors hover:bg-zinc-300"
+                                        onClick={() =>
+                                            setServiceForm({ id: s.id, mode: "duplicate" })
+                                        }
+                                        aria-label={`Duplicate ${s.name}`}
+                                        title="Duplicate service"
+                                        className="shrink-0 rounded-lg border border-zinc-400 bg-zinc-100 px-2 py-1.5 transition-colors hover:bg-zinc-300"
+                                    >
+                                        <Copy size={15} className="text-slate-900" />
+                                    </button>
+                                    <button
+                                        onClick={() => setServiceForm({ id: s.id, mode: "edit" })}
+                                        aria-label={`Edit ${s.name}`}
+                                        title="Edit service"
+                                        className="shrink-0 rounded-lg border border-zinc-400 bg-zinc-100 px-2 py-1.5 transition-colors hover:bg-zinc-300"
                                     >
                                         <Pencil size={15} className="text-slate-900" />
                                     </button>
-                                    <div className="relative">
+                                    <div className="relative shrink-0">
                                         <button
                                             onClick={() => setToBeDelete(s.id)}
+                                            aria-label={`Delete ${s.name}`}
+                                            title="Delete service"
                                             className="rounded-lg border border-zinc-400 bg-red-100 px-2 py-1.5 transition-colors hover:bg-red-300"
                                         >
                                             <Trash2 size={15} className="text-red-900" />
@@ -211,7 +229,6 @@ export function UpcomingServicesAdmin() {
                                             </>
                                         )}
                                     </div>
-                                    {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
                                 </div>
                             </td>
                         </tr>
@@ -219,26 +236,27 @@ export function UpcomingServicesAdmin() {
                 </tbody>
             </table>
 
-            {editingId && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            {serviceForm && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={
+                        serviceForm.mode === "duplicate" ? "Duplicate Service" : "Update Service"
+                    }
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                >
                     <div
                         onClick={(e) => e.stopPropagation()}
                         className="max-h-[90vh] overflow-y-auto"
                     >
-                        <EditServiceForm
-                            id={editingId}
-                            onClose={() => {
-                                setEditingId(null)
-                            }}
-                            onSave={(updated) => {
-                                setServices(
-                                    (prev) =>
-                                        prev?.map((s) =>
-                                            s.id === updated.id
-                                                ? { ...s, ...updated, roles: updated.roles }
-                                                : s
-                                        ) ?? null
-                                )
+                        <ServiceForm
+                            key={`${serviceForm.mode}-${serviceForm.id}`}
+                            id={serviceForm.id}
+                            mode={serviceForm.mode}
+                            onClose={() => setServiceForm(null)}
+                            onSave={() => {
+                                setError(null)
+                                setRefreshKey((prev) => prev + 1)
                             }}
                             token={token}
                         />
@@ -249,8 +267,8 @@ export function UpcomingServicesAdmin() {
     )
 }
 
-function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
-    const navigate = useNavigate()
+function ServiceForm({ id, mode, onClose, onSave, token }: ServiceFormProps) {
+    const isDuplicating = mode === "duplicate"
 
     const [formData, setFormData] = useState({
         name: "",
@@ -265,35 +283,51 @@ function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
 
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const [serviceLoaded, setServiceLoaded] = useState(false)
 
     useEffect(() => {
+        const controller = new AbortController()
+
         async function fetchService() {
-            const response = await fetch(`${API_URL}/api/services/${id}/with-roles`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+            try {
+                const response = await fetch(`${API_URL}/api/services/${id}/with-roles`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    signal: controller.signal
+                })
+                if (!response.ok) {
+                    throw new Error("Failed to load service")
                 }
-            })
-            const service = await response.json()
+                const service = await response.json()
+                if (controller.signal.aborted) return
 
-            setFormData({
-                name: service.name,
-                date: service.date.split("T")[0],
-                time: service.time,
-                status: service.status
-            })
+                setFormData({
+                    name: service.name,
+                    date: isDuplicating ? "" : service.date.split("T")[0],
+                    time: service.time,
+                    status: service.status
+                })
 
-            setRoles(
-                service.roles.map((r: RoleInterface) => ({
-                    id: Date.now() + Math.random(),
-                    name: r.name,
-                    spotsTotal: r.spotsTotal
-                }))
-            )
+                setRoles(
+                    service.roles.map((r: RoleInterface, index: number) => ({
+                        id: index,
+                        name: r.name,
+                        spotsTotal: r.spotsTotal
+                    }))
+                )
+                setServiceLoaded(true)
+            } catch {
+                if (!controller.signal.aborted) {
+                    setError("Could not load the service. Please close this form and try again.")
+                }
+            }
         }
         void fetchService()
-    }, [id, token])
+        return () => controller.abort()
+    }, [id, token, isDuplicating])
 
     function handleChange(field: keyof typeof formData) {
         return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -345,12 +379,18 @@ function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
     }
 
     async function handleSubmit() {
+        if (loading || !serviceLoaded) return
         setError(null)
+        if (isDuplicating && !formData.date) {
+            setError("Please choose a date for the new service.")
+            return
+        }
         setLoading(true)
 
         try {
-            const response = await fetch(`${API_URL}/api/services/update/${id}`, {
-                method: "PUT",
+            const endpoint = isDuplicating ? "create" : `update/${id}`
+            const response = await fetch(`${API_URL}/api/services/${endpoint}`, {
+                method: isDuplicating ? "POST" : "PUT",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
@@ -358,8 +398,8 @@ function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
                 body: JSON.stringify({
                     ...formData,
                     roles: roles.map((role) => ({
-                        ...role,
-                        spotsTotal: role.spotsTotal === "0" ? 0 : Number(role.spotsTotal)
+                        name: role.name,
+                        spotsTotal: Number(role.spotsTotal)
                     }))
                 })
             })
@@ -367,22 +407,15 @@ function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
             const data = await response.json()
 
             if (!response.ok) {
-                setError(data.message || "Failed to update service. Please try again.")
+                setError(
+                    data.message ||
+                        `Failed to ${isDuplicating ? "create" : "update"} service. Please try again.`
+                )
                 return
             }
 
-            if (onClose) onClose()
-            if (onSave)
-                onSave({
-                    id: id,
-                    ...formData,
-                    roles: roles.map(({ name }) => ({
-                        id: "",
-                        serviceId: id,
-                        name
-                    }))
-                })
-            else navigate("/admin/services")
+            onSave()
+            onClose()
         } catch {
             setError("Could not connect to the server. Please try again.")
         } finally {
@@ -393,7 +426,7 @@ function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
     return (
         <div className="flex w-130 flex-col items-center gap-3 rounded-xl bg-slate-800 p-7">
             <div className="mt-2 mr-auto">
-                <Heading>Update Service</Heading>
+                <Heading>{isDuplicating ? "Duplicate Service" : "Update Service"}</Heading>
             </div>
             <div className="-mt-2 mr-auto">
                 <h2 className="text-sm text-zinc-400">
@@ -401,8 +434,10 @@ function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
                 </h2>
             </div>
             <div className="-mt-2.5 mr-auto mb-3">
-                <h2 className="text-sm text-red-400">
-                    Updating this service will remove all current role assignments.
+                <h2 className={`text-sm ${isDuplicating ? "text-zinc-400" : "text-red-400"}`}>
+                    {isDuplicating
+                        ? "Choose a new date. The new service will have no assigned users."
+                        : "Updating this service will remove all current role assignments."}
                 </h2>
             </div>
 
@@ -417,6 +452,8 @@ function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
                     <h3 className="text-sm text-zinc-300">Date</h3>
                     <input
                         type="date"
+                        aria-label="Date"
+                        required={isDuplicating}
                         value={formData.date}
                         onChange={handleChange("date")}
                         className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-zinc-400 transition-colors outline-none focus:border-amber-400"
@@ -492,17 +529,20 @@ function EditServiceForm({ id, onClose, onSave, token }: EditServiceFormProps) {
 
             <button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || !serviceLoaded}
                 className="mt-auto flex w-full justify-center rounded-lg bg-amber-400 py-1.5 text-base font-semibold text-blue-950 transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-                {loading ? "Updating..." : "Update Service"}
+                {loading
+                    ? isDuplicating
+                        ? "Creating..."
+                        : "Updating..."
+                    : isDuplicating
+                      ? "Create Service"
+                      : "Update Service"}
             </button>
 
             <div className="mt-1 flex items-center">
-                <button
-                    onClick={() => (onClose ? onClose() : navigate("admin/services"))}
-                    className="text-sm text-amber-400"
-                >
+                <button onClick={onClose} className="text-sm text-amber-400">
                     ← Back to Services
                 </button>
             </div>

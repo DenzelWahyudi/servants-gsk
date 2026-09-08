@@ -12,7 +12,7 @@ export function AdminServices() {
             </div>
             <div className="flex min-h-0 flex-1">
                 <Sidebar variant="services" />
-                <div className="flex h-full w-full flex-col bg-zinc-100/2 px-10">
+                <div className="flex h-full min-w-0 flex-1 flex-col bg-zinc-100/2 px-10">
                     <div className="flex items-center justify-between py-7">
                         <Heading>Manage Services</Heading>
                         <div className="w-47">
@@ -25,7 +25,7 @@ export function AdminServices() {
                             </ButtonLink>
                         </div>
                     </div>
-                    <div className="overflow-y-auto rounded-lg">
+                    <div className="overflow-auto rounded-lg">
                         <UpcomingServicesAdmin />
                     </div>
                 </div>
