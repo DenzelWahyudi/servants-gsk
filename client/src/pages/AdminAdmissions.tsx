@@ -5,6 +5,7 @@ import { Sidebar } from "../components/Sidebar"
 import { API_URL } from "../api"
 import { format } from "date-fns"
 import { useAuth } from "../hooks/useAuth.ts"
+import { LoadingState } from "../components/LoadingState"
 
 type AdmitCardProps = {
     id: string
@@ -29,32 +30,38 @@ interface Assignment {
 
 export function AdminAdmissions() {
     const [assignments, setAssignments] = useState<Assignment[] | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [refreshKey, setRefreshKey] = useState(0)
     const { token } = useAuth()
 
     useEffect(() => {
+        const controller = new AbortController()
+
         async function fetchPendingAssignments() {
-            const response = await fetch(`${API_URL}/api/assignments/pendingstatus`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
+            setLoading(true)
+            setError(null)
+            try {
+                const response = await fetch(`${API_URL}/api/assignments/pendingstatus`, {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" },
+                    signal: controller.signal
+                })
+                if (!response.ok) throw new Error("Failed to load admissions")
+                const data: Assignment[] = await response.json()
+                if (!Array.isArray(data)) throw new Error("Invalid admissions response")
+                if (!controller.signal.aborted) setAssignments(data)
+            } catch {
+                if (!controller.signal.aborted) {
+                    setError("Could not load admissions. Please refresh the page to try again.")
                 }
-            })
-            const data: Assignment[] = await response.json()
-            setAssignments(Array.isArray(data) ? data : [])
+            } finally {
+                if (!controller.signal.aborted) setLoading(false)
+            }
         }
         void fetchPendingAssignments()
-    }, [])
-
-    async function fetchPendingAssignments() {
-        const response = await fetch(`${API_URL}/api/assignments/pendingstatus`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        })
-        const data: Assignment[] = await response.json()
-        setAssignments(Array.isArray(data) ? data : [])
-    }
+        return () => controller.abort()
+    }, [refreshKey])
 
     return (
         <div className="flex h-screen flex-col overflow-y-auto">
@@ -68,22 +75,34 @@ export function AdminAdmissions() {
                         <Heading>Manage Admissions</Heading>
                     </div>
                     <div className="flex flex-wrap gap-4">
-                        {assignments?.map((a) => (
-                            <div key={a.id}>
-                                <AdmitCard
-                                    id={a.id}
-                                    userName={a.userName}
-                                    roleName={a.roleName}
-                                    serviceName={a.serviceName}
-                                    date={a.date}
-                                    time={a.time}
-                                    onSave={() => {
-                                        void fetchPendingAssignments()
-                                    }}
-                                    token={token}
-                                />
-                            </div>
-                        ))}
+                        {loading ? (
+                            <LoadingState label="Loading admissions..." />
+                        ) : error ? (
+                            <p role="alert" className="text-sm text-red-400">
+                                {error}
+                            </p>
+                        ) : assignments?.length === 0 ? (
+                            <p className="w-full py-8 text-center text-sm text-zinc-400">
+                                No pending admissions.
+                            </p>
+                        ) : (
+                            assignments?.map((a) => (
+                                <div key={a.id}>
+                                    <AdmitCard
+                                        id={a.id}
+                                        userName={a.userName}
+                                        roleName={a.roleName}
+                                        serviceName={a.serviceName}
+                                        date={a.date}
+                                        time={a.time}
+                                        onSave={() => {
+                                            setRefreshKey((key) => key + 1)
+                                        }}
+                                        token={token}
+                                    />
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

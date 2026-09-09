@@ -5,6 +5,7 @@ import { format } from "date-fns"
 import { useNavigate } from "react-router-dom"
 import { Heading } from "./Heading"
 import { useAuth } from "../hooks/useAuth.ts"
+import { LoadingState } from "./LoadingState"
 
 type RoleFormProps = {
     userId?: string
@@ -50,29 +51,43 @@ interface Role {
 
 export function RolesCard({ serviceId, serviceName, serviceTime, serviceDate }: RolesCardProps) {
     const [roles, setRoles] = useState<Role[] | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [assignData, setAssignData] = useState<Assign | null>(null)
     const [relieveData, setRelieveData] = useState<Assign | null>(null)
     const [refreshKey, setRefreshKey] = useState(0)
     const { token } = useAuth()
 
     useEffect(() => {
-        async function fetchService() {
-            const response = await fetch(
-                `${API_URL}/api/roles/assignedusersforroles/${serviceId}`,
-                {
-                    method: "GET",
-                    headers: { "Content-Type": "applicaton/json" }
-                }
-            )
-            const data: Role[] = await response.json()
+        const controller = new AbortController()
 
-            const sorted = data.sort((a, b) => a.name.localeCompare(b.name))
-            setRoles(sorted)
+        async function fetchService() {
+            setLoading(true)
+            setError(null)
+            try {
+                const response = await fetch(
+                    `${API_URL}/api/roles/assignedusersforroles/${serviceId}`,
+                    {
+                        method: "GET",
+                        headers: { "Content-Type": "application/json" },
+                        signal: controller.signal
+                    }
+                )
+                if (!response.ok) throw new Error("Failed to load roles")
+                const data: Role[] = await response.json()
+                const sorted = data.sort((a, b) => a.name.localeCompare(b.name))
+                if (!controller.signal.aborted) setRoles(sorted)
+            } catch {
+                if (!controller.signal.aborted) {
+                    setError("Could not load roles. Please refresh the page to try again.")
+                }
+            } finally {
+                if (!controller.signal.aborted) setLoading(false)
+            }
         }
         void fetchService()
+        return () => controller.abort()
     }, [serviceId, refreshKey])
-
-    if (!roles) return <div>Loading...</div>
 
     return (
         <div className="rounded-lg bg-white p-2.5">
@@ -90,57 +105,77 @@ export function RolesCard({ serviceId, serviceName, serviceTime, serviceDate }: 
                     </tr>
                 </thead>
                 <tbody>
-                    {roles?.map((r) => (
-                        <tr key={r.id} className="border-b border-zinc-200 text-zinc-900">
-                            <td className="px-2.5 py-2 wrap-break-word">{r.name}</td>
-                            <td className="py-2 wrap-break-word">
-                                {r.userNames?.join(", ") ?? "..."}
-                            </td>
-                            <td className="text-center">
-                                {r.spotsFilled}/{r.spotsTotal}
-                            </td>
-                            <td className="text-center">
-                                <span
-                                    className={`rounded-xl px-2.5 py-1 text-xs font-light text-zinc-100 shadow ${r.spotsFilled === r.spotsTotal ? "bg-red-600" : r.spotsFilled < r.spotsTotal ? "bg-green-600" : "bg-orange-600"}`}
-                                >
-                                    {r.spotsFilled === r.spotsTotal
-                                        ? "Filled"
-                                        : r.spotsFilled < r.spotsTotal
-                                          ? "Open"
-                                          : "Over"}
-                                </span>
-                            </td>
-                            <td>
-                                <div className="flex items-center justify-center gap-1 py-2">
-                                    <button
-                                        onClick={() =>
-                                            setRelieveData({
-                                                roleId: r.id,
-                                                serviceName: serviceName,
-                                                roleName: r.name
-                                            })
-                                        }
-                                        className="trasition-colors rounded-lg border border-zinc-400 bg-zinc-100 px-1.5 py-1 hover:bg-zinc-300 disabled:bg-red-300"
-                                    >
-                                        <UserMinus size={16} className="text-slate-900" />
-                                    </button>
-                                    <button
-                                        disabled={r.spotsFilled >= r.spotsTotal}
-                                        onClick={() =>
-                                            setAssignData({
-                                                roleId: r.id,
-                                                serviceName: serviceName,
-                                                roleName: r.name
-                                            })
-                                        }
-                                        className="trasition-colors rounded-lg border border-zinc-400 bg-zinc-100 px-1.5 py-1 hover:bg-zinc-300 disabled:bg-red-300"
-                                    >
-                                        <UserPlus size={16} className="text-slate-900" />
-                                    </button>
-                                </div>
+                    {loading ? (
+                        <tr>
+                            <td colSpan={5} className="text-slate-900">
+                                <LoadingState label="Loading roles..." />
                             </td>
                         </tr>
-                    ))}
+                    ) : error ? (
+                        <tr>
+                            <td colSpan={5} className="px-4 py-8 text-center text-red-600">
+                                <p role="alert">{error}</p>
+                            </td>
+                        </tr>
+                    ) : roles?.length === 0 ? (
+                        <tr>
+                            <td colSpan={5} className="py-8 text-center text-zinc-500">
+                                No roles found.
+                            </td>
+                        </tr>
+                    ) : (
+                        roles?.map((r) => (
+                            <tr key={r.id} className="border-b border-zinc-200 text-zinc-900">
+                                <td className="px-2.5 py-2 wrap-break-word">{r.name}</td>
+                                <td className="py-2 wrap-break-word">
+                                    {r.userNames?.join(", ") ?? "..."}
+                                </td>
+                                <td className="text-center">
+                                    {r.spotsFilled}/{r.spotsTotal}
+                                </td>
+                                <td className="text-center">
+                                    <span
+                                        className={`rounded-xl px-2.5 py-1 text-xs font-light text-zinc-100 shadow ${r.spotsFilled === r.spotsTotal ? "bg-red-600" : r.spotsFilled < r.spotsTotal ? "bg-green-600" : "bg-orange-600"}`}
+                                    >
+                                        {r.spotsFilled === r.spotsTotal
+                                            ? "Filled"
+                                            : r.spotsFilled < r.spotsTotal
+                                              ? "Open"
+                                              : "Over"}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div className="flex items-center justify-center gap-1 py-2">
+                                        <button
+                                            onClick={() =>
+                                                setRelieveData({
+                                                    roleId: r.id,
+                                                    serviceName: serviceName,
+                                                    roleName: r.name
+                                                })
+                                            }
+                                            className="trasition-colors rounded-lg border border-zinc-400 bg-zinc-100 px-1.5 py-1 hover:bg-zinc-300 disabled:bg-red-300"
+                                        >
+                                            <UserMinus size={16} className="text-slate-900" />
+                                        </button>
+                                        <button
+                                            disabled={r.spotsFilled >= r.spotsTotal}
+                                            onClick={() =>
+                                                setAssignData({
+                                                    roleId: r.id,
+                                                    serviceName: serviceName,
+                                                    roleName: r.name
+                                                })
+                                            }
+                                            className="trasition-colors rounded-lg border border-zinc-400 bg-zinc-100 px-1.5 py-1 hover:bg-zinc-300 disabled:bg-red-300"
+                                        >
+                                            <UserPlus size={16} className="text-slate-900" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </table>
             {assignData && (
@@ -197,17 +232,36 @@ function RelieveRoleForm({ roleId, serviceName, roleName, onClose, token }: Role
     const [users, setUsers] = useState<RelieveUser[] | null>(null)
     const [user, setUser] = useState("")
     const [loading, setLoading] = useState(false)
+    const [usersLoading, setUsersLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
 
     useEffect(() => {
+        const controller = new AbortController()
+
         async function fetchUsers() {
-            const usersRes = await fetch(`${API_URL}/api/assignments/relieve/${roleId}`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" }
-            })
-            const usersData: RelieveUser[] = await usersRes.json()
-            setUsers(usersData)
+            setUsersLoading(true)
+            setLoadError(null)
+            setUser("")
+            try {
+                const usersRes = await fetch(`${API_URL}/api/assignments/relieve/${roleId}`, {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" },
+                    signal: controller.signal
+                })
+                if (!usersRes.ok) throw new Error("Failed to load users")
+                const usersData: RelieveUser[] = await usersRes.json()
+                if (!Array.isArray(usersData)) throw new Error("Invalid users response")
+                if (!controller.signal.aborted) setUsers(usersData)
+            } catch {
+                if (!controller.signal.aborted) {
+                    setLoadError("Could not load users. Please close this form and try again.")
+                }
+            } finally {
+                if (!controller.signal.aborted) setUsersLoading(false)
+            }
         }
         void fetchUsers()
+        return () => controller.abort()
     }, [roleId])
 
     function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -269,13 +323,26 @@ function RelieveRoleForm({ roleId, serviceName, roleName, onClose, token }: Role
             </div>
             <div className="flex flex-col gap-1">
                 <h3 className="text-sm font-light text-zinc-100">Remove Assignment</h3>
+                {usersLoading && <LoadingState label="Loading assigned users..." />}
+                {loadError && (
+                    <p role="alert" className="text-sm text-red-400">
+                        {loadError}
+                    </p>
+                )}
                 <select
                     value={user}
                     onChange={handleChange}
+                    disabled={usersLoading || !!loadError || loading}
                     className={`w-full rounded border border-zinc-600 p-1 pl-2 text-left text-base transition-colors outline-none focus:border-amber-400 ${user ? "" : "font-medium text-zinc-500"}`}
                 >
                     <option value="" disabled>
-                        Select a user
+                        {usersLoading
+                            ? "Loading users..."
+                            : loadError
+                              ? "Users unavailable"
+                              : users?.length === 0
+                                ? "No assigned users"
+                                : "Select a user"}
                     </option>
                     {users?.map((user) => (
                         <option key={user.userId} value={user.userId}>
@@ -294,7 +361,7 @@ function RelieveRoleForm({ roleId, serviceName, roleName, onClose, token }: Role
                 </button>
                 <button
                     onClick={() => handleRemove(user!, roleId)}
-                    disabled={!user || loading}
+                    disabled={!user || loading || usersLoading || !!loadError}
                     className="rounded-lg bg-amber-400 px-3 py-1.5 text-base text-slate-900 hover:bg-amber-500 disabled:bg-zinc-500"
                 >
                     {loading ? "Removing..." : "Remove"}
@@ -310,17 +377,35 @@ function AssignRoleForm({ roleId, serviceName, roleName, onClose, token }: RoleF
     const [users, setUsers] = useState<User[] | null>(null)
     const [user, setUser] = useState("")
     const [loading, setLoading] = useState(false)
+    const [usersLoading, setUsersLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
 
     useEffect(() => {
+        const controller = new AbortController()
+
         async function fetchUsers() {
-            const response = await fetch(`${API_URL}/api/users`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" }
-            })
-            const data: User[] = await response.json()
-            setUsers(data)
+            setUsersLoading(true)
+            setLoadError(null)
+            try {
+                const response = await fetch(`${API_URL}/api/users`, {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" },
+                    signal: controller.signal
+                })
+                if (!response.ok) throw new Error("Failed to load users")
+                const data: User[] = await response.json()
+                if (!Array.isArray(data)) throw new Error("Invalid users response")
+                if (!controller.signal.aborted) setUsers(data)
+            } catch {
+                if (!controller.signal.aborted) {
+                    setLoadError("Could not load users. Please close this form and try again.")
+                }
+            } finally {
+                if (!controller.signal.aborted) setUsersLoading(false)
+            }
         }
         void fetchUsers()
+        return () => controller.abort()
     }, [])
 
     async function handleAssign(userId: string, roleId: string) {
@@ -384,13 +469,26 @@ function AssignRoleForm({ roleId, serviceName, roleName, onClose, token }: RoleF
             </div>
             <div className="flex flex-col gap-1">
                 <h3 className="text-sm font-light text-zinc-100">Assign To</h3>
+                {usersLoading && <LoadingState label="Loading users..." />}
+                {loadError && (
+                    <p role="alert" className="text-sm text-red-400">
+                        {loadError}
+                    </p>
+                )}
                 <select
                     value={user}
                     onChange={handleChange}
+                    disabled={usersLoading || !!loadError || loading}
                     className={`w-full rounded border border-zinc-600 p-1 pl-2 text-left text-base transition-colors outline-none focus:border-amber-400 ${user ? "" : "font-medium text-zinc-500"}`}
                 >
                     <option value="" disabled>
-                        Select a user
+                        {usersLoading
+                            ? "Loading users..."
+                            : loadError
+                              ? "Users unavailable"
+                              : users?.length === 0
+                                ? "No users found"
+                                : "Select a user"}
                     </option>
                     {users?.map((user) => (
                         <option key={user.id} value={user.id}>
@@ -409,7 +507,7 @@ function AssignRoleForm({ roleId, serviceName, roleName, onClose, token }: RoleF
                 </button>
                 <button
                     onClick={() => handleAssign(user!, roleId)}
-                    disabled={!user || loading}
+                    disabled={!user || loading || usersLoading || !!loadError}
                     className="rounded-lg bg-amber-400 px-3 py-1.5 text-base text-slate-900 hover:bg-amber-500 disabled:bg-zinc-500"
                 >
                     {loading ? "Assigning..." : "Assign"}

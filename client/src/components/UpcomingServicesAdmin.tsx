@@ -5,6 +5,7 @@ import { format } from "date-fns"
 import { Form } from "./Form"
 import { Heading } from "./Heading"
 import { useAuth } from "../hooks/useAuth.ts"
+import { LoadingState } from "./LoadingState"
 
 type Role2 = {
     id: number
@@ -45,6 +46,8 @@ interface Service {
 
 export function UpcomingServicesAdmin() {
     const [services, setServices] = useState<Service[] | null>(null)
+    const [servicesLoading, setServicesLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [serviceForm, setServiceForm] = useState<ServiceFormState | null>(null)
     const [refreshKey, setRefreshKey] = useState(0)
@@ -56,6 +59,8 @@ export function UpcomingServicesAdmin() {
         const controller = new AbortController()
 
         async function fetchServices() {
+            setServicesLoading(true)
+            setLoadError(null)
             try {
                 const response = await fetch(`${API_URL}/api/services/with-roles`, {
                     method: "GET",
@@ -68,11 +73,14 @@ export function UpcomingServicesAdmin() {
                     throw new Error("Failed to load services")
                 }
                 const data: Service[] = await response.json()
+                if (!Array.isArray(data)) throw new Error("Invalid services response")
                 if (!controller.signal.aborted) setServices(data)
             } catch {
                 if (!controller.signal.aborted) {
-                    setError("Could not load services. Please refresh the page to try again.")
+                    setLoadError("Could not load services. Please refresh the page to try again.")
                 }
+            } finally {
+                if (!controller.signal.aborted) setServicesLoading(false)
             }
         }
         void fetchServices()
@@ -147,92 +155,116 @@ export function UpcomingServicesAdmin() {
                     </tr>
                 </thead>
                 <tbody>
-                    {services?.map((s, index) => (
-                        <tr key={s.id} className="border-b border-zinc-400 text-zinc-950">
-                            <td className="pl-3 font-medium wrap-break-word">{s.name}</td>
-                            <td className="pr-3">{format(new Date(s.date), "dd MMMM yyyy")}</td>
-                            <td className="pr-3 wrap-break-word">{s.time}</td>
-                            <td className="py-3 pr-4 wrap-break-word">
-                                {s.roles?.map((r) => r.name).join(", ") ?? "..."}
-                            </td>
-                            <td>
-                                <div className="flex items-center justify-center">
-                                    <select
-                                        value={s.status}
-                                        onChange={handleStatusChange(s.id)}
-                                        className={`inline-block w-27 rounded py-1 text-center text-[13.5px] font-semibold ${
-                                            s.status === "Roles Closed"
-                                                ? "bg-red-200"
-                                                : "bg-green-200"
-                                        }`}
-                                    >
-                                        <option value="Roles Open">Roles Open</option>
-                                        <option value="Roles Closed">Roles Closed</option>
-                                    </select>
-                                </div>
-                            </td>
-                            <td>
-                                <div className="flex items-center justify-center gap-1">
-                                    <button
-                                        onClick={() =>
-                                            setServiceForm({ id: s.id, mode: "duplicate" })
-                                        }
-                                        aria-label={`Duplicate ${s.name}`}
-                                        title="Duplicate service"
-                                        className="shrink-0 rounded-lg border border-zinc-400 bg-zinc-100 px-2 py-1.5 transition-colors hover:bg-zinc-300"
-                                    >
-                                        <Copy size={15} className="text-slate-900" />
-                                    </button>
-                                    <button
-                                        onClick={() => setServiceForm({ id: s.id, mode: "edit" })}
-                                        aria-label={`Edit ${s.name}`}
-                                        title="Edit service"
-                                        className="shrink-0 rounded-lg border border-zinc-400 bg-zinc-100 px-2 py-1.5 transition-colors hover:bg-zinc-300"
-                                    >
-                                        <Pencil size={15} className="text-slate-900" />
-                                    </button>
-                                    <div className="relative shrink-0">
-                                        <button
-                                            onClick={() => setToBeDelete(s.id)}
-                                            aria-label={`Delete ${s.name}`}
-                                            title="Delete service"
-                                            className="rounded-lg border border-zinc-400 bg-red-100 px-2 py-1.5 transition-colors hover:bg-red-300"
-                                        >
-                                            <Trash2 size={15} className="text-red-900" />
-                                        </button>
-                                        {toBeDelete === s.id && (
-                                            <>
-                                                <div
-                                                    className="fixed inset-0 z-40"
-                                                    onClick={() => setToBeDelete(null)}
-                                                />
-                                                <div
-                                                    className={`absolute ${index < services.length - 1 ? "top-full mt-1" : "bottom-full mb-1"} right-0 z-50 flex w-24 flex-col items-center gap-1 rounded-lg bg-slate-800 p-2 text-xs text-white shadow-lg`}
-                                                >
-                                                    <span>Are you sure?</span>
-                                                    <div className="flex items-center gap-3">
-                                                        <button
-                                                            disabled={loading}
-                                                            onClick={() => handleDelete(toBeDelete)}
-                                                            className="hover:text-amber-400 disabled:text-amber-400"
-                                                        >
-                                                            Yes
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setToBeDelete(null)}
-                                                            className="hover:text-amber-400"
-                                                        >
-                                                            No
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
+                    {servicesLoading ? (
+                        <tr>
+                            <td colSpan={6} className="text-slate-900">
+                                <LoadingState label="Loading services..." />
                             </td>
                         </tr>
-                    ))}
+                    ) : loadError ? (
+                        <tr>
+                            <td colSpan={6} className="px-4 py-8 text-center text-red-600">
+                                <p role="alert">{loadError}</p>
+                            </td>
+                        </tr>
+                    ) : services?.length === 0 ? (
+                        <tr>
+                            <td colSpan={6} className="py-8 text-center text-zinc-500">
+                                No services found.
+                            </td>
+                        </tr>
+                    ) : (
+                        services?.map((s, index) => (
+                            <tr key={s.id} className="border-b border-zinc-400 text-zinc-950">
+                                <td className="pl-3 font-medium wrap-break-word">{s.name}</td>
+                                <td className="pr-3">{format(new Date(s.date), "dd MMMM yyyy")}</td>
+                                <td className="pr-3 wrap-break-word">{s.time}</td>
+                                <td className="py-3 pr-4 wrap-break-word">
+                                    {s.roles?.map((r) => r.name).join(", ") ?? "..."}
+                                </td>
+                                <td>
+                                    <div className="flex items-center justify-center">
+                                        <select
+                                            value={s.status}
+                                            onChange={handleStatusChange(s.id)}
+                                            className={`inline-block w-27 rounded py-1 text-center text-[13.5px] font-semibold ${
+                                                s.status === "Roles Closed"
+                                                    ? "bg-red-200"
+                                                    : "bg-green-200"
+                                            }`}
+                                        >
+                                            <option value="Roles Open">Roles Open</option>
+                                            <option value="Roles Closed">Roles Closed</option>
+                                        </select>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div className="flex items-center justify-center gap-1">
+                                        <button
+                                            onClick={() =>
+                                                setServiceForm({ id: s.id, mode: "duplicate" })
+                                            }
+                                            aria-label={`Duplicate ${s.name}`}
+                                            title="Duplicate service"
+                                            className="shrink-0 rounded-lg border border-zinc-400 bg-zinc-100 px-2 py-1.5 transition-colors hover:bg-zinc-300"
+                                        >
+                                            <Copy size={15} className="text-slate-900" />
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                setServiceForm({ id: s.id, mode: "edit" })
+                                            }
+                                            aria-label={`Edit ${s.name}`}
+                                            title="Edit service"
+                                            className="shrink-0 rounded-lg border border-zinc-400 bg-zinc-100 px-2 py-1.5 transition-colors hover:bg-zinc-300"
+                                        >
+                                            <Pencil size={15} className="text-slate-900" />
+                                        </button>
+                                        <div className="relative shrink-0">
+                                            <button
+                                                onClick={() => setToBeDelete(s.id)}
+                                                aria-label={`Delete ${s.name}`}
+                                                title="Delete service"
+                                                className="rounded-lg border border-zinc-400 bg-red-100 px-2 py-1.5 transition-colors hover:bg-red-300"
+                                            >
+                                                <Trash2 size={15} className="text-red-900" />
+                                            </button>
+                                            {toBeDelete === s.id && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-40"
+                                                        onClick={() => setToBeDelete(null)}
+                                                    />
+                                                    <div
+                                                        className={`absolute ${index < services.length - 1 ? "top-full mt-1" : "bottom-full mb-1"} right-0 z-50 flex w-24 flex-col items-center gap-1 rounded-lg bg-slate-800 p-2 text-xs text-white shadow-lg`}
+                                                    >
+                                                        <span>Are you sure?</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <button
+                                                                disabled={loading}
+                                                                onClick={() =>
+                                                                    handleDelete(toBeDelete)
+                                                                }
+                                                                className="hover:text-amber-400 disabled:text-amber-400"
+                                                            >
+                                                                Yes
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setToBeDelete(null)}
+                                                                className="hover:text-amber-400"
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </table>
 
@@ -284,11 +316,15 @@ function ServiceForm({ id, mode, onClose, onSave, token }: ServiceFormProps) {
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [serviceLoaded, setServiceLoaded] = useState(false)
+    const [serviceLoading, setServiceLoading] = useState(true)
 
     useEffect(() => {
         const controller = new AbortController()
 
         async function fetchService() {
+            setServiceLoading(true)
+            setServiceLoaded(false)
+            setError(null)
             try {
                 const response = await fetch(`${API_URL}/api/services/${id}/with-roles`, {
                     method: "GET",
@@ -323,6 +359,8 @@ function ServiceForm({ id, mode, onClose, onSave, token }: ServiceFormProps) {
                 if (!controller.signal.aborted) {
                     setError("Could not load the service. Please close this form and try again.")
                 }
+            } finally {
+                if (!controller.signal.aborted) setServiceLoading(false)
             }
         }
         void fetchService()
@@ -421,6 +459,24 @@ function ServiceForm({ id, mode, onClose, onSave, token }: ServiceFormProps) {
         } finally {
             setLoading(false)
         }
+    }
+
+    if (serviceLoading || !serviceLoaded) {
+        return (
+            <div className="flex w-130 flex-col items-center gap-3 rounded-xl bg-slate-800 p-7">
+                <Heading>{isDuplicating ? "Duplicate Service" : "Update Service"}</Heading>
+                {serviceLoading ? (
+                    <LoadingState label="Loading service details..." />
+                ) : (
+                    <p role="alert" className="py-8 text-center text-sm text-red-400">
+                        {error}
+                    </p>
+                )}
+                <button onClick={onClose} className="text-sm text-amber-400">
+                    ← Back to Services
+                </button>
+            </div>
+        )
     }
 
     return (

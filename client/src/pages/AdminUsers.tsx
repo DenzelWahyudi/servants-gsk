@@ -6,6 +6,7 @@ import { API_URL } from "../api"
 import { Check, Pencil, Trash2 } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
+import { LoadingState } from "../components/LoadingState"
 
 interface User {
     id: string
@@ -22,7 +23,8 @@ interface Chosen {
 
 export function AdminUsers() {
     const [users, setUsers] = useState<User[] | null>(null)
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [chosenName, setChosenName] = useState<Chosen | null>(null)
     const [chosenEmail, setChosenEmail] = useState<Chosen | null>(null)
@@ -36,43 +38,53 @@ export function AdminUsers() {
     const { token } = useAuth()
 
     useEffect(() => {
+        const controller = new AbortController()
+
         async function fetchUsers() {
             setLoading(true)
+            setLoadError(null)
 
-            const response = await fetch(`${API_URL}/api/users`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" }
-            })
+            try {
+                const response = await fetch(`${API_URL}/api/users`, {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" },
+                    signal: controller.signal
+                })
+                if (!response.ok) throw new Error("Failed to load users")
+                const data: User[] = await response.json()
+                if (!Array.isArray(data)) throw new Error("Invalid users response")
+                if (controller.signal.aborted) return
 
-            const data: User[] = await response.json()
-
-            if (q === "newest") {
-                const sorted = data.sort(
-                    (a, b) =>
-                        new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
-                )
-                setUsers(sorted)
-            } else if (q === "oldest") {
-                const sorted = data.sort(
-                    (a, b) =>
-                        new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
-                )
-                setUsers(sorted)
-            } else if (q === "name") {
-                const sorted = data.sort((a, b) => a.name.localeCompare(b.name))
-                setUsers(sorted)
-            } else if (q === "email") {
-                const sorted = data.sort((a, b) => a.email.localeCompare(b.email))
-                setUsers(sorted)
-            } else if (q === "number") {
-                const sorted = data.sort((a, b) => a.phoneNumber.localeCompare(b.phoneNumber))
-                setUsers(sorted)
-            } else {
+                if (q === "newest") {
+                    data.sort(
+                        (a, b) =>
+                            new Date(b.createdAt ?? 0).getTime() -
+                            new Date(a.createdAt ?? 0).getTime()
+                    )
+                } else if (q === "oldest") {
+                    data.sort(
+                        (a, b) =>
+                            new Date(a.createdAt ?? 0).getTime() -
+                            new Date(b.createdAt ?? 0).getTime()
+                    )
+                } else if (q === "name") {
+                    data.sort((a, b) => a.name.localeCompare(b.name))
+                } else if (q === "email") {
+                    data.sort((a, b) => a.email.localeCompare(b.email))
+                } else if (q === "number") {
+                    data.sort((a, b) => a.phoneNumber.localeCompare(b.phoneNumber))
+                }
                 setUsers(data)
+            } catch {
+                if (!controller.signal.aborted) {
+                    setLoadError("Could not load users. Please refresh the page to try again.")
+                }
+            } finally {
+                if (!controller.signal.aborted) setLoading(false)
             }
-            setLoading(false)
         }
         void fetchUsers()
+        return () => controller.abort()
     }, [q, refreshKey])
 
     function handleNameChange(field: keyof Chosen) {
@@ -244,7 +256,27 @@ export function AdminUsers() {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td>Loading...</td>
+                                        <td colSpan={4}>
+                                            <LoadingState label="Loading users..." />
+                                        </td>
+                                    </tr>
+                                ) : loadError ? (
+                                    <tr>
+                                        <td
+                                            colSpan={4}
+                                            className="px-4 py-8 text-center text-sm text-red-600"
+                                        >
+                                            <p role="alert">{loadError}</p>
+                                        </td>
+                                    </tr>
+                                ) : users?.length === 0 ? (
+                                    <tr>
+                                        <td
+                                            colSpan={4}
+                                            className="py-8 text-center text-sm text-zinc-500"
+                                        >
+                                            No users found.
+                                        </td>
                                     </tr>
                                 ) : (
                                     users?.map((u, index) => (
