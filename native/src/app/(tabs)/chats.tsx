@@ -367,6 +367,7 @@ export default function ChatsTab() {
     }
 
     async function fetchGroupDetails(serviceId: string) {
+        Keyboard.dismiss()
         setLoadingDetails(true)
         setError(null)
         try {

@@ -49,67 +49,115 @@ interface Service {
     roles?: Role[]
 }
 
+interface HomeData {
+    userName: string
+    schedule: Schedule[]
+    roles: Role[]
+    services: Service[]
+}
+
 export default function HomeTab() {
-    const [userName, setUserName] = useState<string | null>(null)
-    const [schedule, setSchedule] = useState<Schedule[] | null>(null)
-    const [roles, setRoles] = useState<Role[] | null>(null)
+    const [homeData, setHomeData] = useState<HomeData | null>(null)
+    const [homeLoading, setHomeLoading] = useState(true)
+    const [homeError, setHomeError] = useState<string | null>(null)
+    const [slowLoading, setSlowLoading] = useState(false)
+    const [retryCount, setRetryCount] = useState(0)
     const [assignments, setAssignments] = useState<Assignment[] | null>(null)
     const { token, logout } = useAuth()
     const [loading, setLoading] = useState(false)
 
     const todayServiceCount =
-        schedule?.filter((s) => {
+        homeData?.schedule.filter((s) => {
             const serviceDate = startOfDay(new Date(s.date))
             return isEqual(serviceDate, startOfToday())
         }).length ?? 0
 
     const openRoles =
-        roles?.filter((r) => {
+        homeData?.roles.filter((r) => {
             return r.spotsFilled < r.spotsTotal
-        }).length ?? null
+        }).length ?? 0
 
     useFocusEffect(
         useCallback(() => {
-            async function fetchUser() {
-                const response = await fetch(`${API_URL}/api/users/name`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                })
-                const data = await response.json()
-                setUserName(data)
-            }
-            async function fetchSchedule() {
-                const response = await fetch(`${API_URL}/api/assignments/schedule`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                })
-                const data: Schedule[] = await response.json()
-                setSchedule(Array.isArray(data) ? data : [])
-            }
-            async function fetchRoles() {
-                const rolesResponse = await fetch(`${API_URL}/api/roles`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                })
-                const rolesData = await rolesResponse.json()
-                setRoles(rolesData)
-            }
-            if (token) {
-                void fetchUser()
-                void fetchSchedule()
-            }
-            void fetchRoles()
+            if (!token) return
 
-            return () => {}
-        }, [token])
+            let active = true
+            let timedOut = false
+            const controller = new AbortController()
+
+            setHomeLoading(true)
+            setHomeError(null)
+            setSlowLoading(false)
+
+            const slowTimer = setTimeout(() => {
+                if (active) setSlowLoading(true)
+            }, 5_000)
+            const timeoutTimer = setTimeout(() => {
+                timedOut = true
+                controller.abort()
+            }, 90_000)
+
+            async function fetchHomeResource<T>(path: string, authenticated = false): Promise<T> {
+                const response = await fetch(`${API_URL}${path}`, {
+                    method: "GET",
+                    signal: controller.signal,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(authenticated ? { Authorization: `Bearer ${token}` } : {})
+                    }
+                })
+
+                if (!response.ok) throw new Error("Failed to load home data")
+                return response.json()
+            }
+
+            async function fetchHomeData() {
+                try {
+                    const [userName, schedule, roles, services] = await Promise.all([
+                        fetchHomeResource<string>("/api/users/name", true),
+                        fetchHomeResource<Schedule[]>("/api/assignments/schedule", true),
+                        fetchHomeResource<Role[]>("/api/roles"),
+                        fetchHomeResource<Service[]>("/api/services/with-roles")
+                    ])
+
+                    if (
+                        typeof userName !== "string" ||
+                        !Array.isArray(schedule) ||
+                        !Array.isArray(roles) ||
+                        !Array.isArray(services)
+                    ) {
+                        throw new Error("Unexpected home data")
+                    }
+
+                    if (active) setHomeData({ userName, schedule, roles, services })
+                } catch {
+                    controller.abort()
+                    if (active) {
+                        setHomeError(
+                            timedOut
+                                ? "Loading timed out. Check your connection and try again."
+                                : "Couldn't load your home page. Check your connection and try again."
+                        )
+                    }
+                } finally {
+                    clearTimeout(slowTimer)
+                    clearTimeout(timeoutTimer)
+                    if (active) {
+                        setHomeLoading(false)
+                        setSlowLoading(false)
+                    }
+                }
+            }
+
+            void fetchHomeData()
+
+            return () => {
+                active = false
+                controller.abort()
+                clearTimeout(slowTimer)
+                clearTimeout(timeoutTimer)
+            }
+        }, [token, retryCount])
     )
 
     async function getAssignments() {
@@ -126,13 +174,61 @@ export default function HomeTab() {
         setLoading(false)
     }
 
+    const homeStatus = (homeLoading || homeError) && (
+        <View
+            className="mx-6 mb-6 items-center rounded-2xl border border-zinc-200 bg-white px-5 py-6"
+            accessibilityLiveRegion="polite"
+        >
+            {homeLoading ? (
+                <>
+                    <ActivityIndicator size="large" color="#d97706" />
+                    <Text className="mt-4 text-center text-base font-semibold text-zinc-800">
+                        {homeData ? "Refreshing your home page…" : "Loading your home page…"}
+                    </Text>
+                    {slowLoading && (
+                        <Text className="mt-2 text-center text-sm text-zinc-500">
+                            This is taking longer than usual. Please wait.
+                        </Text>
+                    )}
+                </>
+            ) : (
+                <>
+                    <Ionicons name="cloud-offline-outline" size={32} color="#71717a" />
+                    <Text className="mt-3 text-center text-base font-medium text-zinc-800">
+                        {homeError}
+                    </Text>
+                    {homeData && (
+                        <Text className="mt-2 text-center text-sm text-zinc-500">
+                            Showing previously loaded information.
+                        </Text>
+                    )}
+                    <Pressable
+                        accessibilityRole="button"
+                        onPress={() => setRetryCount((count) => count + 1)}
+                        className="mt-4 rounded-xl bg-amber-400 px-6 py-3 active:opacity-80"
+                    >
+                        <Text className="text-sm font-bold text-amber-950">Retry</Text>
+                    </Pressable>
+                </>
+            )}
+        </View>
+    )
+
+    if (!homeData) {
+        return (
+            <SafeAreaView className="flex-1 justify-center bg-zinc-50" edges={["top"]}>
+                {homeStatus}
+            </SafeAreaView>
+        )
+    }
+
     return (
         <SafeAreaView className="flex-1 bg-zinc-50" edges={["top"]}>
             <ScrollView className="flex-1" contentContainerClassName="pb-10">
                 <View className="flex-row items-center justify-between px-6 pb-6">
                     <View>
                         <Text className="text-3xl font-bold text-zinc-900">
-                            Hello, <Text className="text-amber-500">{userName ?? "..."}</Text>
+                            Hello, <Text className="text-amber-500">{homeData.userName}</Text>
                         </Text>
                         <Text className="mt-1 text-base font-medium text-zinc-500">
                             Here is what's happening today
@@ -149,6 +245,8 @@ export default function HomeTab() {
                         <Ionicons name="log-out-outline" size={24} color="#71717a" />
                     </Pressable>
                 </View>
+
+                {homeStatus}
 
                 <ScrollView
                     horizontal
@@ -171,13 +269,13 @@ export default function HomeTab() {
                     <StatsCard
                         linkTo="/openings"
                         icon="calendar"
-                        title={`Open Recruitment: ${openRoles ?? 0}`}
+                        title={`Open Recruitment: ${openRoles}`}
                         buttonLabel="Fill Remaining Roles"
                     />
                 </ScrollView>
 
                 <View className="mt-2 min-h-[500px] flex-1 rounded-t-3xl bg-white px-6 pt-8 shadow-sm">
-                    <UpcomingServicesMobile />
+                    <UpcomingServicesMobile services={homeData.services} />
                 </View>
 
                 <Modal
@@ -315,25 +413,7 @@ function StatsCard({ icon, title, buttonLabel, linkTo, onClick, onDisabled }: St
     )
 }
 
-export function UpcomingServicesMobile() {
-    const [services, setServices] = useState<Service[] | null>(null)
-
-    useFocusEffect(
-        useCallback(() => {
-            async function fetchServices() {
-                const response = await fetch(`${API_URL}/api/services/with-roles`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                })
-                const data: Service[] = await response.json()
-                setServices(data)
-            }
-            void fetchServices()
-        }, [])
-    )
-
+export function UpcomingServicesMobile({ services }: { services: Service[] }) {
     return (
         <View className="pb-10">
             <View className="mb-6 flex-row items-center justify-between">
@@ -344,7 +424,7 @@ export function UpcomingServicesMobile() {
             </View>
 
             <View className="gap-6">
-                {services?.map((s) => (
+                {services.map((s) => (
                     <View
                         key={s.id}
                         className="rounded-[28px] border border-zinc-200/60 bg-white p-6 shadow-sm"
@@ -425,7 +505,7 @@ export function UpcomingServicesMobile() {
                         </View>
                     </View>
                 ))}
-                {(!services || services.length === 0) && (
+                {services.length === 0 && (
                     <View className="items-center justify-center rounded-[28px] border border-dashed border-zinc-100 bg-zinc-50/50 py-12">
                         <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
                             <Ionicons name="calendar-clear-outline" size={28} color="#a1a1aa" />
