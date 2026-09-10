@@ -8,7 +8,8 @@ import {
     KeyboardAvoidingView,
     Dimensions,
     Keyboard,
-    Linking
+    Linking,
+    ActivityIndicator
 } from "react-native"
 import * as DocumentPicker from "expo-document-picker"
 import { useFocusEffect } from "expo-router"
@@ -206,8 +207,10 @@ export default function ChatsTab() {
     const insets = useSafeAreaInsets()
     const { token } = useAuth()
     const [assignedServices, setAssignedServices] = useState<Service[] | null>([])
+    const [loadingServices, setLoadingServices] = useState(true)
+    const [servicesError, setServicesError] = useState<string | null>(null)
     const [chosenService, setChosenService] = useState<Service | null>(null)
-    const { chats } = useChatSocket(chosenService?.serviceId)
+    const { chats, isLoading: loadingChats } = useChatSocket(chosenService?.serviceId)
     const [message, setMessage] = useState<Message>({
         serviceId: "",
         message: "",
@@ -244,17 +247,28 @@ export default function ChatsTab() {
 
     useFocusEffect(
         useCallback(() => {
+            let active = true
+
             async function fetchAssignedServices() {
-                const response = await fetch(`${API_URL}/api/assignments/assignedservices`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                })
-                const data: Service[] = await response.json()
-                const sorted = data.sort((a, b) => b.unreadMessage - a.unreadMessage)
-                setAssignedServices(sorted)
+                setLoadingServices(true)
+                setServicesError(null)
+                try {
+                    const response = await fetch(`${API_URL}/api/assignments/assignedservices`, {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        }
+                    })
+                    if (!response.ok) throw new Error("Failed to load chats")
+                    const data: Service[] = await response.json()
+                    const sorted = data.sort((a, b) => b.unreadMessage - a.unreadMessage)
+                    if (active) setAssignedServices(sorted)
+                } catch {
+                    if (active) setServicesError("Could not load chats. Please try again.")
+                } finally {
+                    if (active) setLoadingServices(false)
+                }
             }
 
             async function fetchUserId() {
@@ -272,6 +286,12 @@ export default function ChatsTab() {
             if (token) {
                 void fetchAssignedServices()
                 void fetchUserId()
+            } else {
+                setLoadingServices(false)
+            }
+
+            return () => {
+                active = false
             }
         }, [token])
     )
@@ -467,8 +487,28 @@ export default function ChatsTab() {
                         </View>
                     </View>
 
-                    <ScrollView className="flex-1 px-4" contentContainerClassName="pb-20">
-                        {displayedServices.length === 0 ? (
+                    <ScrollView
+                        className="flex-1 px-4"
+                        contentContainerClassName={
+                            loadingServices ? "flex-grow justify-center pb-20" : "pb-20"
+                        }
+                    >
+                        {loadingServices ? (
+                            <View className="items-center justify-center">
+                                <ActivityIndicator
+                                    size="large"
+                                    color="#d97706"
+                                    accessibilityLabel="Loading chats"
+                                />
+                                <Text className="mt-3 text-base font-medium text-zinc-500">
+                                    Loading chats…
+                                </Text>
+                            </View>
+                        ) : servicesError ? (
+                            <Text className="mt-10 text-center text-base text-rose-500">
+                                {servicesError}
+                            </Text>
+                        ) : displayedServices.length === 0 ? (
                             <View className="mt-10 items-center justify-center">
                                 <Text className="text-base font-medium text-zinc-500">
                                     No chats found.
@@ -590,57 +630,72 @@ export default function ChatsTab() {
                             <ScrollView
                                 ref={scrollViewRef}
                                 className="flex-1 px-3 pt-4"
-                                contentContainerClassName="pb-6"
+                                contentContainerClassName={
+                                    loadingChats ? "flex-grow justify-center pb-6" : "pb-6"
+                                }
                                 onContentSizeChange={() =>
                                     scrollViewRef.current?.scrollToEnd({ animated: true })
                                 }
                             >
-                                {chats?.map((c, index) => {
-                                    const currentDate = new Date(c.createdAt)
-                                    const prevDate =
-                                        index > 0 ? new Date(chats[index - 1].createdAt) : null
-                                    const showDateSeparator =
-                                        !prevDate ||
-                                        currentDate.toDateString() !== prevDate.toDateString()
+                                {loadingChats ? (
+                                    <View className="items-center justify-center">
+                                        <ActivityIndicator
+                                            size="large"
+                                            color="#d97706"
+                                            accessibilityLabel="Loading chats"
+                                        />
+                                        <Text className="mt-3 text-base font-medium text-zinc-500">
+                                            Loading chats…
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    chats?.map((c, index) => {
+                                        const currentDate = new Date(c.createdAt)
+                                        const prevDate =
+                                            index > 0 ? new Date(chats[index - 1].createdAt) : null
+                                        const showDateSeparator =
+                                            !prevDate ||
+                                            currentDate.toDateString() !== prevDate.toDateString()
 
-                                    return (
-                                        <View
-                                            key={c.id}
-                                            onLayout={(e) => {
-                                                messageLayouts.current[c.id] =
-                                                    e.nativeEvent.layout.y
-                                            }}
-                                        >
-                                            {showDateSeparator && (
-                                                <View className="my-3 items-center">
-                                                    <View className="rounded-lg bg-white/80 px-3 py-1 shadow-sm">
-                                                        <Text className="text-xs font-medium uppercase text-zinc-500">
-                                                            {format(currentDate, "EEE, d MMMM")}
-                                                        </Text>
+                                        return (
+                                            <View
+                                                key={c.id}
+                                                onLayout={(e) => {
+                                                    messageLayouts.current[c.id] =
+                                                        e.nativeEvent.layout.y
+                                                }}
+                                            >
+                                                {showDateSeparator && (
+                                                    <View className="my-3 items-center">
+                                                        <View className="rounded-lg bg-white/80 px-3 py-1 shadow-sm">
+                                                            <Text className="text-xs font-medium uppercase text-zinc-500">
+                                                                {format(currentDate, "EEE, d MMMM")}
+                                                            </Text>
+                                                        </View>
                                                     </View>
-                                                </View>
-                                            )}
-                                            <ChatBubble
-                                                chat={c}
-                                                isMine={c.userId === userId.id}
-                                                members={members}
-                                                onReply={(chat) =>
-                                                    setMessage((prev) => ({
-                                                        ...prev,
-                                                        replyTo: {
-                                                            chatId: chat.id,
-                                                            userId: chat.userId,
-                                                            userName: chat.userName,
-                                                            message: chat.message
-                                                        }
-                                                    }))
-                                                }
-                                                onReadStatus={(chat) => setReadStatusChat(chat)}
-                                                scrollToMessage={scrollToMessage}
-                                            />
-                                        </View>
-                                    )
-                                })}
+                                                )}
+                                                <ChatBubble
+                                                    chat={c}
+                                                    isMine={c.userId === userId.id}
+                                                    members={members}
+                                                    onReply={(chat) =>
+                                                        setMessage((prev) => ({
+                                                            ...prev,
+                                                            replyTo: {
+                                                                chatId: chat.id,
+                                                                userId: chat.userId,
+                                                                userName: chat.userName,
+                                                                message: chat.message
+                                                            }
+                                                        }))
+                                                    }
+                                                    onReadStatus={(chat) => setReadStatusChat(chat)}
+                                                    scrollToMessage={scrollToMessage}
+                                                />
+                                            </View>
+                                        )
+                                    })
+                                )}
                             </ScrollView>
 
                             {/* Input Area */}

@@ -42,32 +42,43 @@ const WS_URL = API_URL.replace(/^http/, "ws")
 
 export function useChatSocket(serviceId: string | undefined) {
     const [chats, setChats] = useState<Chat[]>([])
+    const [loadingState, setLoadingState] = useState({ serviceId, isLoading: !!serviceId })
     const wsRef = useRef<WebSocket | null>(null)
     const { token } = useAuth()
 
     useEffect(() => {
         let cancelled = false
 
+        setChats([])
+        setLoadingState({ serviceId, isLoading: !!serviceId })
         if (!serviceId) return
 
         // Initial load via REST
         fetch(`${API_URL}/api/chats/${serviceId}`, {
             headers: { "Content-Type": "application/json" }
         })
-            .then((res) => res.json())
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to load chats")
+                return res.json()
+            })
             .then((data: Chat[]) => {
                 if (!cancelled) setChats(data)
             })
             .catch((err) => {
                 if (!cancelled) console.error("Failed to load chats:", err)
             })
+            .finally(() => {
+                if (!cancelled) setLoadingState({ serviceId, isLoading: false })
+            })
 
         // Live updates via WebSocket
         function connect() {
+            if (cancelled) return
             const ws = new WebSocket(`${WS_URL}/ws/chats/${serviceId}`)
             wsRef.current = ws
 
             ws.onmessage = (event) => {
+                if (cancelled) return
                 const { type, data } = JSON.parse(event.data)
                 if (type === "NEW_CHAT") {
                     setChats((prev) => [...prev, data])
@@ -136,5 +147,8 @@ export function useChatSocket(serviceId: string | undefined) {
         return () => subscription.remove()
     }, [serviceId, token])
 
-    return { chats }
+    const isLoading =
+        !!serviceId && (loadingState.serviceId !== serviceId || loadingState.isLoading)
+
+    return { chats, isLoading }
 }
