@@ -69,12 +69,14 @@ export function Login() {
                     value={formData.phoneNumber}
                     onChange={handleChange("phoneNumber")}
                     type="tel"
+                    className="text-base"
                 />
                 <Form
                     label="Password"
                     value={formData.password}
                     onChange={handleChange("password")}
                     type="password"
+                    className="text-base"
                 />
 
                 {error && (
