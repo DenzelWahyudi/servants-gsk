@@ -342,7 +342,7 @@ function ServiceForm({ id, mode, onClose, onSave, token }: ServiceFormProps) {
 
                 setFormData({
                     name: service.name,
-                    date: isDuplicating ? "" : service.date.split("T")[0],
+                    date: isDuplicating ? "" : format(new Date(service.date), "yyyy-MM-dd"),
                     time: service.time,
                     status: service.status
                 })
