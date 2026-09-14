@@ -225,7 +225,7 @@ export function AdminUsers() {
                         <Heading>Manage Users</Heading>
                         <select
                             value={q ?? "newest"}
-                            className="rounded border border-zinc-400 px-1 py-0.5 outline-none select-none"
+                            className="rounded border border-zinc-400 px-1 py-0.5 outline-none select-none [&>option]:bg-white [&>option]:text-zinc-950"
                             onChange={(e) =>
                                 setSearchParams(
                                     (prev) => {

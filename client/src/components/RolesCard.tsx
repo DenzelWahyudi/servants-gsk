@@ -333,7 +333,7 @@ function RelieveRoleForm({ roleId, serviceName, roleName, onClose, token }: Role
                     value={user}
                     onChange={handleChange}
                     disabled={usersLoading || !!loadError || loading}
-                    className={`w-full rounded border border-zinc-600 p-1 pl-2 text-left text-base transition-colors outline-none focus:border-amber-400 ${user ? "" : "font-medium text-zinc-500"}`}
+                    className={`w-full rounded border border-zinc-600 p-1 pl-2 text-left text-base transition-colors outline-none focus:border-amber-400 [&>option]:bg-white [&>option]:text-zinc-950 ${user ? "" : "font-medium text-zinc-500"}`}
                 >
                     <option value="" disabled>
                         {usersLoading
@@ -479,7 +479,7 @@ function AssignRoleForm({ roleId, serviceName, roleName, onClose, token }: RoleF
                     value={user}
                     onChange={handleChange}
                     disabled={usersLoading || !!loadError || loading}
-                    className={`w-full rounded border border-zinc-600 p-1 pl-2 text-left text-base transition-colors outline-none focus:border-amber-400 ${user ? "" : "font-medium text-zinc-500"}`}
+                    className={`w-full rounded border border-zinc-600 p-1 pl-2 text-left text-base transition-colors outline-none focus:border-amber-400 [&>option]:bg-white [&>option]:text-zinc-950 ${user ? "" : "font-medium text-zinc-500"}`}
                 >
                     <option value="" disabled>
                         {usersLoading
